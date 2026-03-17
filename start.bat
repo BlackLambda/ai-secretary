@@ -208,10 +208,10 @@ if not exist "%~dp0frontend\node_modules" (
   call npm ci
   set "NPM_EXIT_CODE=%ERRORLEVEL%"
   popd
-  if %NPM_EXIT_CODE% NEQ 0 (
+  if not "!NPM_EXIT_CODE!"=="0" (
     echo [ERROR] Failed to install frontend dependencies.
     pause
-    exit /b %NPM_EXIT_CODE%
+    exit /b !NPM_EXIT_CODE!
   )
 )
 
@@ -220,10 +220,10 @@ pushd "%~dp0frontend"
 call npm run build
 set "FRONTEND_BUILD_EXIT_CODE=%ERRORLEVEL%"
 popd
-if %FRONTEND_BUILD_EXIT_CODE% NEQ 0 (
+if not "!FRONTEND_BUILD_EXIT_CODE!"=="0" (
   echo [ERROR] Frontend build failed.
   pause
-  exit /b %FRONTEND_BUILD_EXIT_CODE%
+  exit /b !FRONTEND_BUILD_EXIT_CODE!
 )
 
 echo.
