@@ -111,9 +111,6 @@ export const OnboardingWizard: React.FC<Props> = ({ onComplete }) => {
 
   // Fetch model lists lazily for the selected backend so the dropdown appears faster.
   useEffect(() => {
-    if (modelOptions[aiBackend].length > 0 || modelLoading[aiBackend]) {
-      return;
-    }
     let cancelled = false;
     setModelLoadError('');
     setModelLoading((prev) => ({ ...prev, [aiBackend]: true }));
@@ -136,7 +133,7 @@ export const OnboardingWizard: React.FC<Props> = ({ onComplete }) => {
     return () => {
       cancelled = true;
     };
-  }, [aiBackend, modelLoading, modelOptions]);
+  }, [aiBackend]);
 
   useEffect(() => {
     if (azureModel && modelOptions.azure.length > 0 && !modelOptions.azure.includes(azureModel)) {
@@ -290,11 +287,13 @@ export const OnboardingWizard: React.FC<Props> = ({ onComplete }) => {
 
   // Auto-fetch profile only after Microsoft auth is ready.
   // Copilot connectivity alone is not sufficient for Substrate profile lookup.
+  const autoFetchedRef = useRef(false);
   useEffect(() => {
-    if (azureLoggedIn === true && !profile && !profileLoading) {
+    if (azureLoggedIn === true && !profile && !autoFetchedRef.current) {
+      autoFetchedRef.current = true;
       handleFetchProfile();
     }
-  }, [azureLoggedIn, profile, profileLoading, handleFetchProfile]);
+  }, [azureLoggedIn, profile, handleFetchProfile]);
 
   /* --------------------------------------------------------------- */
   /*  Step 2: Recent focus                                            */

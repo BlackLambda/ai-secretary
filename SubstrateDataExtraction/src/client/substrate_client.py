@@ -105,13 +105,15 @@ class SubstrateClient:
                 response = requests.get(
                     url,
                     headers=self._get_headers(),
-                    params=params
+                    params=params,
+                    timeout=60,
                 )
             else:
                 response = requests.get(
                     url,
                     headers=self._get_headers_v2(),
-                    params=params
+                    params=params,
+                    timeout=60,
                 )
             response.raise_for_status()
 
@@ -136,7 +138,8 @@ class SubstrateClient:
                     response = requests.get(
                         url,
                         headers=self._get_headers(),
-                        params=params
+                        params=params,
+                        timeout=60,
                     )
                     response.raise_for_status()
 
@@ -182,7 +185,8 @@ class SubstrateClient:
             response = requests.post(
                 url,
                 headers=self._get_headers(extra_headers),
-                json=json
+                json=json,
+                timeout=60,
             )
             response.raise_for_status()
 
@@ -202,7 +206,8 @@ class SubstrateClient:
                     response = requests.post(
                         url,
                         headers=self._get_headers(extra_headers),
-                        json=json
+                        json=json,
+                        timeout=60,
                     )
                     response.raise_for_status()
 

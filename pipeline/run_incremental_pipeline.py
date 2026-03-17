@@ -1450,9 +1450,38 @@ def run_pipeline(open_browser=False, enable_dedup=False, skip_fetch=False):
     # 0. Sync topics into profile before running anything else
     maybe_sync_topics(base_dir)
     
-    # Load User Info
+    # Load User Info — bootstrap user_profile.json if missing
+    profile_path = base_dir / USER_PROFILE_FILE
+    if not profile_path.exists():
+        print("[INFO] user_profile.json not found. Attempting to bootstrap via fetch_user_profile.py...")
+        fetch_profile_script = base_dir / "pipeline" / "fetch_user_profile.py"
+        if fetch_profile_script.exists():
+            try:
+                profile_path.parent.mkdir(parents=True, exist_ok=True)
+                subprocess.check_call(
+                    [sys.executable, str(fetch_profile_script), "--output-profile", str(profile_path)],
+                    cwd=str(base_dir),
+                )
+                print(f"[INFO] Successfully bootstrapped user_profile.json at {profile_path}")
+            except Exception as bootstrap_err:
+                msg = f"Failed to bootstrap user_profile.json: {bootstrap_err}"
+                print(f"[ERROR] {msg}")
+                try:
+                    update_pipeline_status('offline', msg, run_id=run_id)
+                except Exception:
+                    pass
+                return
+        else:
+            msg = "user_profile.json missing and fetch_user_profile.py not found. Cannot bootstrap."
+            print(f"[ERROR] {msg}")
+            try:
+                update_pipeline_status('offline', msg, run_id=run_id)
+            except Exception:
+                pass
+            return
+
     try:
-        user_alias, user_email = get_user_info(base_dir / USER_PROFILE_FILE)
+        user_alias, user_email = get_user_info(profile_path)
     except Exception as e:
         msg = f"Missing/invalid dataset user_profile.json: {e}"
         print(f"[ERROR] {msg}")

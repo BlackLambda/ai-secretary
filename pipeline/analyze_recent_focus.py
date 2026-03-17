@@ -108,11 +108,11 @@ def _write_text(path: str, text: str) -> None:
         f.write(text)
 
 
-def _run_py(cwd: str, args: List[str]) -> None:
+def _run_py(cwd: str, args: List[str], timeout: int = 120) -> None:
     """Run a python command in a given working directory."""
     cmd = [sys.executable, *args]
     print(f"[RUN] (cwd={cwd}) {' '.join(cmd)}")
-    subprocess.run(cmd, cwd=cwd, check=True)
+    subprocess.run(cmd, cwd=cwd, check=True, timeout=timeout)
 
 
 @dataclass
