@@ -4,6 +4,7 @@ import json
 from pathlib import Path
 import argparse
 import shutil
+import importlib.util
 
 
 REPO_NAME = "SubstrateDataExtraction"
@@ -68,12 +69,18 @@ def _ensure_substrate_repo(target_dir: Path) -> None:
 
     req_file = target_dir / "requirements.txt"
     if req_file.exists():
-        ok = run_command(
-            [sys.executable, "-m", "pip", "install", "-r", str(req_file)],
-            description="Installing SubstrateDataExtraction dependencies (best-effort)",
-        )
-        if not ok:
-            print("[WARNING] Failed to install some SubstrateDataExtraction dependencies.")
+        required_modules = ("requests", "msal", "jwt", "playwright")
+        missing_modules = [name for name in required_modules if importlib.util.find_spec(name) is None]
+        if missing_modules:
+            print(f"\n[INFO] Missing SubstrateDataExtraction modules detected: {', '.join(missing_modules)}")
+            ok = run_command(
+                [sys.executable, "-m", "pip", "install", "-r", str(req_file)],
+                description="Installing SubstrateDataExtraction dependencies (best-effort)",
+            )
+            if not ok:
+                print("[WARNING] Failed to install some SubstrateDataExtraction dependencies.")
+        else:
+            print("\n[INFO] SubstrateDataExtraction dependencies already available. Skipping pip install.")
     else:
         print(f"\n[INFO] No requirements.txt found at {req_file}. Skipping pip install.")
 

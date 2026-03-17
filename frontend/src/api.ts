@@ -661,8 +661,9 @@ export const api = {
   },
 
   // Return available model lists per AI provider.
-  async getAiModels(): Promise<{ azure: string[]; copilot: string[] }> {
-    const response = await fetch(`${API_BASE}/ai/models`);
+  async getAiModels(provider?: 'azure' | 'copilot'): Promise<{ azure: string[]; copilot: string[] }> {
+    const suffix = provider ? `?provider=${encodeURIComponent(provider)}` : '';
+    const response = await fetch(`${API_BASE}/ai/models${suffix}`);
     return response.json();
   },
 

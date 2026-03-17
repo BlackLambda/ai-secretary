@@ -83,8 +83,10 @@ export const OnboardingWizard: React.FC<Props> = ({ onComplete }) => {
 
   // Model selection state
   const [modelOptions, setModelOptions] = useState<{ azure: string[]; copilot: string[] }>({ azure: [], copilot: [] });
-  const [azureModel, setAzureModel] = useState<string>(saved.azureModel ?? 'gpt-5.1');
-  const [copilotModel, setCopilotModel] = useState<string>(saved.copilotModel ?? 'gemini-3-flash-preview');
+  const [modelLoading, setModelLoading] = useState<{ azure: boolean; copilot: boolean }>({ azure: false, copilot: false });
+  const [modelLoadError, setModelLoadError] = useState('');
+  const [azureModel, setAzureModel] = useState<string>(saved.azureModel ?? '');
+  const [copilotModel, setCopilotModel] = useState<string>(saved.copilotModel ?? '');
 
   // Step 2 state
   const [focusLoading, setFocusLoading] = useState(false);
@@ -106,10 +108,48 @@ export const OnboardingWizard: React.FC<Props> = ({ onComplete }) => {
   useEffect(() => { saveDraft({ azureModel }); }, [azureModel]);
   useEffect(() => { saveDraft({ copilotModel }); }, [copilotModel]);
 
-  // Fetch model lists once
+  // Fetch model lists lazily for the selected backend so the dropdown appears faster.
   useEffect(() => {
-    api.getAiModels().then(setModelOptions).catch(() => {});
-  }, []);
+    if (modelOptions[aiBackend].length > 0 || modelLoading[aiBackend]) {
+      return;
+    }
+    let cancelled = false;
+    setModelLoadError('');
+    setModelLoading((prev) => ({ ...prev, [aiBackend]: true }));
+    api.getAiModels(aiBackend)
+      .then((res) => {
+        if (cancelled) return;
+        setModelOptions((prev) => ({
+          azure: aiBackend === 'azure' ? (Array.isArray(res.azure) ? res.azure : []) : prev.azure,
+          copilot: aiBackend === 'copilot' ? (Array.isArray(res.copilot) ? res.copilot : []) : prev.copilot,
+        }));
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setModelLoadError('Failed to load models. Please try again.');
+      })
+      .finally(() => {
+        if (cancelled) return;
+        setModelLoading((prev) => ({ ...prev, [aiBackend]: false }));
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [aiBackend, modelLoading, modelOptions]);
+
+  useEffect(() => {
+    if (azureModel && modelOptions.azure.length > 0 && !modelOptions.azure.includes(azureModel)) {
+      setAzureModel('');
+      setPingResult(null);
+    }
+  }, [azureModel, modelOptions.azure]);
+
+  useEffect(() => {
+    if (copilotModel && modelOptions.copilot.length > 0 && !modelOptions.copilot.includes(copilotModel)) {
+      setCopilotModel('');
+      setPingResult(null);
+    }
+  }, [copilotModel, modelOptions.copilot]);
 
   // Check Copilot login status when copilot backend is selected
   useEffect(() => {
@@ -225,6 +265,10 @@ export const OnboardingWizard: React.FC<Props> = ({ onComplete }) => {
   }, []);
 
   const handleFetchProfile = useCallback(async () => {
+    if (azureLoggedIn !== true) {
+      setProfileError('Microsoft profile detection requires a work-account sign-in first. Use Login with Azure, then fetch the profile.');
+      return;
+    }
     setProfileLoading(true);
     setProfileError('');
     try {
@@ -236,15 +280,20 @@ export const OnboardingWizard: React.FC<Props> = ({ onComplete }) => {
     } finally {
       setProfileLoading(false);
     }
-  }, []);
+  }, [azureLoggedIn]);
 
-  // Auto-fetch profile on mount if the selected backend is connected
+  const selectedModel = aiBackend === 'copilot' ? copilotModel : azureModel;
+  const selectedModelOptions = aiBackend === 'copilot' ? modelOptions.copilot : modelOptions.azure;
+  const selectedModelLoading = aiBackend === 'copilot' ? modelLoading.copilot : modelLoading.azure;
+  const selectedModelReady = !!selectedModel && selectedModelOptions.includes(selectedModel);
+
+  // Auto-fetch profile only after Microsoft auth is ready.
+  // Copilot connectivity alone is not sufficient for Substrate profile lookup.
   useEffect(() => {
-    const backendReady = aiBackend === 'copilot' ? copilotLoggedIn === true : azureLoggedIn === true;
-    if (backendReady && !profile && !profileLoading) {
+    if (azureLoggedIn === true && !profile && !profileLoading) {
       handleFetchProfile();
     }
-  }, [aiBackend, azureLoggedIn, copilotLoggedIn, profile, profileLoading, handleFetchProfile]);
+  }, [azureLoggedIn, profile, profileLoading, handleFetchProfile]);
 
   /* --------------------------------------------------------------- */
   /*  Step 2: Recent focus                                            */
@@ -437,20 +486,28 @@ export const OnboardingWizard: React.FC<Props> = ({ onComplete }) => {
                 <label className="v2-ai-backend-label" style={{ marginRight: 4 }}>Model</label>
                 <select
                   className="v2-onboarding-select"
-                  value={aiBackend === 'copilot' ? copilotModel : azureModel}
+                  value={selectedModel}
                   onChange={(e) => {
                     if (aiBackend === 'copilot') setCopilotModel(e.target.value);
                     else setAzureModel(e.target.value);
                     setPingResult(null);
                   }}
+                  disabled={selectedModelLoading}
                 >
-                  {(aiBackend === 'copilot' ? modelOptions.copilot : modelOptions.azure).map((m) => (
+                  <option value="">
+                    {selectedModelLoading
+                      ? 'Loading models…'
+                      : selectedModelOptions.length > 0
+                        ? 'Select a model'
+                        : 'No models available'}
+                  </option>
+                  {selectedModelOptions.map((m) => (
                     <option key={m} value={m}>{m}</option>
                   ))}
                 </select>
                 <button
                   className="v2-btn v2-btn-secondary v2-btn-sm"
-                  disabled={pinging || (aiBackend === 'azure' ? azureLoggedIn !== true : copilotLoggedIn !== true)}
+                  disabled={pinging || !selectedModelReady || (aiBackend === 'azure' ? azureLoggedIn !== true : copilotLoggedIn !== true)}
                   onClick={async () => {
                     setPinging(true);
                     setPingResult(null);
@@ -467,6 +524,7 @@ export const OnboardingWizard: React.FC<Props> = ({ onComplete }) => {
                 >
                   {pinging ? '⏳ Testing…' : '🏓 Ping'}
                 </button>
+                {modelLoadError && <span style={{ fontSize: 13, color: '#dc2626' }}>{modelLoadError}</span>}
                 {pingResult && (
                   <span style={{ fontSize: 13, color: pingResult.ok ? '#16a34a' : '#dc2626' }}>
                     {pingResult.ok
@@ -523,6 +581,9 @@ export const OnboardingWizard: React.FC<Props> = ({ onComplete }) => {
                   <>
                     {copilotLoggedIn === null && <span>Checking Copilot credentials…</span>}
                     {copilotLoggedIn === true && <span>✓ GitHub Copilot connected</span>}
+                    {copilotLoggedIn === true && azureLoggedIn !== true && (
+                      <span className="v2-azure-detail">Profile detection still needs your Microsoft work account. Use Login with Azure before fetching your profile.</span>
+                    )}
                     {copilotLoggedIn === false && !copilotDeviceFlow && (
                       <div className="v2-copilot-login-prompt">
                         <span>✗ GitHub Copilot not connected</span>
@@ -574,7 +635,7 @@ export const OnboardingWizard: React.FC<Props> = ({ onComplete }) => {
                 <button
                   className="v2-btn v2-btn-secondary"
                   onClick={handleFetchProfile}
-                  disabled={profileLoading || (aiBackend === 'copilot' ? copilotLoggedIn !== true : azureLoggedIn !== true)}
+                  disabled={profileLoading || azureLoggedIn !== true}
                 >
                   {profileLoading ? 'Fetching…' : 'Fetch Profile'}
                 </button>
@@ -584,6 +645,10 @@ export const OnboardingWizard: React.FC<Props> = ({ onComplete }) => {
                     setNextChecking(true);
                     setNextError('');
                     try {
+                      if (!selectedModelReady) {
+                        setNextError(selectedModelLoading ? 'Wait for the model list to finish loading, then choose a model.' : 'Choose a model before continuing.');
+                        return;
+                      }
                       // Double-check the selected AI provider connection before proceeding
                       if (aiBackend === 'azure') {
                         const res: any = await api.getAzureStatus();
@@ -609,7 +674,7 @@ export const OnboardingWizard: React.FC<Props> = ({ onComplete }) => {
                       setNextChecking(false);
                     }
                   }}
-                  disabled={!profile || nextChecking}
+                  disabled={!profile || !selectedModelReady || selectedModelLoading || nextChecking}
                 >
                   {nextChecking ? 'Checking…' : 'Next →'}
                 </button>

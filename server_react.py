@@ -4270,6 +4270,17 @@ def _fetch_copilot_models() -> list[str]:
 @app.route('/api/ai/models', methods=['GET'])
 def ai_models():
     """Return available model options for each AI provider, detected at runtime."""
+    provider = str(request.args.get('provider') or '').strip().lower()
+    if provider == 'azure':
+        return jsonify({
+            'azure': _fetch_azure_models(),
+            'copilot': [],
+        })
+    if provider == 'copilot':
+        return jsonify({
+            'azure': [],
+            'copilot': _fetch_copilot_models(),
+        })
     return jsonify({
         'azure': _fetch_azure_models(),
         'copilot': _fetch_copilot_models(),
