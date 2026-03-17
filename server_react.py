@@ -6114,12 +6114,12 @@ def _api_extension_zip():
 
 @app.route('/api/install_extension', methods=['POST', 'OPTIONS'])
 def _api_install_extension():
-    """Run install_extension_playwright.py and return the result."""
+    """Run the direct Edge extension installer and return the result."""
     if request.method == 'OPTIONS':
         return '', 204
-    script = Path(BASE_DIR) / 'pipeline' / 'install_extension_playwright.py'
+    script = Path(BASE_DIR) / 'install_extension.py'
     if not script.exists():
-        return jsonify({'ok': False, 'error': 'install_extension_playwright.py not found'}), 404
+        return jsonify({'ok': False, 'error': 'install_extension.py not found'}), 404
 
     # Optional URL to reopen in Edge after install
     body = request.get_json(silent=True) or {}
@@ -6156,13 +6156,24 @@ def _api_install_extension():
             pass
 
     try:
+        try:
+            subprocess.run(
+                ['taskkill', '/IM', 'msedge.exe', '/F'],
+                capture_output=True,
+                text=True,
+                timeout=15,
+                cwd=str(BASE_DIR),
+            )
+        except Exception:
+            pass
+
         result = subprocess.run(
             [sys.executable, str(script)],
             capture_output=True, text=True, timeout=120,
             cwd=str(BASE_DIR),
         )
         output = (result.stdout or '') + (result.stderr or '')
-        success = 'SUCCESS' in output and 'location = 4' in output
+        success = result.returncode == 0 and '[OK] Extension injected into Edge Preferences' in output
         threading.Thread(target=_relaunch_edge, args=(relaunch_url,), daemon=True).start()
         return jsonify({'ok': success, 'output': output, 'returncode': result.returncode})
     except subprocess.TimeoutExpired:
