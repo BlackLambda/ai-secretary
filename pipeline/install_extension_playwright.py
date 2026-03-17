@@ -20,6 +20,7 @@ Note: On subsequent runs the dialog already remembers the browser_extension path
 import ctypes
 import json
 import os
+import shutil
 import subprocess
 import sys
 import time
@@ -42,10 +43,27 @@ except ImportError:
 
 # Config
 SCRIPT_DIR    = Path(__file__).parent
-EXT_DIR       = (SCRIPT_DIR.parent / "browser_extension").resolve()
+EXT_SOURCE_DIR = (SCRIPT_DIR.parent / "browser_extension").resolve()
 USER_DATA_DIR = Path(os.environ["LOCALAPPDATA"]) / "Microsoft" / "Edge" / "User Data"
 SECURE_PREFS  = USER_DATA_DIR / "Default" / "Secure Preferences"
 EXT_ID        = "mninbaioclkdbmeppcipanjiiiegbgdd"
+
+
+def _downloads_dir() -> Path:
+    profile = Path(os.environ.get("USERPROFILE", str(Path.home())))
+    return profile / "Downloads"
+
+
+def stage_extension_in_downloads() -> Path:
+    downloads_dir = _downloads_dir()
+    stage_root = downloads_dir / "ai_secretary_extension_auto"
+    staged_dir = stage_root / "browser_extension"
+
+    stage_root.mkdir(parents=True, exist_ok=True)
+    if staged_dir.exists():
+        shutil.rmtree(staged_dir, ignore_errors=True)
+    shutil.copytree(EXT_SOURCE_DIR, staged_dir)
+    return staged_dir
 
 
 def kill_edge():
@@ -154,15 +172,18 @@ def check_installed():
 
 
 def install_extension():
-    if not EXT_DIR.exists():
-        print(f"[!] Extension folder not found: {EXT_DIR}")
+    if not EXT_SOURCE_DIR.exists():
+        print(f"[!] Extension folder not found: {EXT_SOURCE_DIR}")
         sys.exit(1)
+
+    ext_dir = stage_extension_in_downloads()
 
     print()
     print("=" * 62)
     print("  AI Secretary Extension Installer")
     print("=" * 62)
-    print(f"\n  Extension : {EXT_DIR}")
+    print(f"\n  Source    : {EXT_SOURCE_DIR}")
+    print(f"  Staged    : {ext_dir}")
     print(f"  Profile   : {USER_DATA_DIR / 'Default'}")
 
     entry_before = check_installed()
@@ -203,7 +224,7 @@ def install_extension():
         page.wait_for_timeout(1000)
         print("Developer mode enabled.\n")
 
-        t = threading.Thread(target=handle_folder_dialog, args=(str(EXT_DIR),), daemon=True)
+        t = threading.Thread(target=handle_folder_dialog, args=(str(ext_dir),), daemon=True)
         t.start()
         print("Clicking 'Load unpacked'...")
         page.locator("text=Load unpacked").click()
