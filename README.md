@@ -4,6 +4,8 @@ AI Secretary is a local-first Outlook and Teams triage app. It fetches recent wo
 
 ## Quick Start
 
+For a detailed first-run walkthrough with screenshots, see the [Getting Started Guide](docs/getting-started.md).
+
 The primary setup and launch path is:
 
 ```bash
@@ -221,14 +223,6 @@ npm run dev
 cd frontend
 npm run build
 ```
-
-## Bug Reports
-
-When a bug report is submitted from the UI, the backend writes a JSON payload under `incremental_data/bug_reports/` and uses a best-effort mailto/draft flow so the user can attach and send it manually from Outlook Web.
-
-Relevant endpoint:
-
-- `GET /api/bug_reports/<filename>`
 
 ## Main Directories
 
