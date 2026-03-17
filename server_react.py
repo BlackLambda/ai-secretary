@@ -1441,18 +1441,25 @@ def _truthy(v) -> bool:
         return False
 
 
-def _autostart_pipeline_if_enabled() -> None:
-    """Start the pipeline once (best-effort) when enabled in config or when schedule is active."""
+def _pipeline_auto_start_enabled(cfg: dict | None) -> bool:
+    if not isinstance(cfg, dict):
+        return False
+    return _truthy(cfg.get('run_pipeline_after_start')) or _truthy(cfg.get('schedule_enabled'))
+
+
+def _autostart_pipeline_if_enabled(*, once: bool = True) -> None:
+    """Start the pipeline when enabled in config or when schedule is active."""
     global _PIPELINE_AUTOSTART_ATTEMPTED
-    if _PIPELINE_AUTOSTART_ATTEMPTED:
+    if once and _PIPELINE_AUTOSTART_ATTEMPTED:
         return
-    _PIPELINE_AUTOSTART_ATTEMPTED = True
+    if once:
+        _PIPELINE_AUTOSTART_ATTEMPTED = True
 
     try:
         cfg = load_config()
-        # Auto-start if explicitly enabled OR if schedule is enabled
-        should_autostart = _truthy(cfg.get('run_pipeline_after_start')) or _truthy(cfg.get('schedule_enabled'))
-        if not should_autostart:
+        if not _pipeline_auto_start_enabled(cfg):
+            return
+        if _PIPELINE_USER_STOPPED:
             return
 
         with _PIPELINE_LOCK:
@@ -1478,10 +1485,10 @@ def _autostart_pipeline_if_enabled() -> None:
         print(f"[PIPELINE] Auto-start error: {e}")
 
 
-def _kickoff_pipeline_autostart_background() -> None:
+def _kickoff_pipeline_autostart_background(*, once: bool = True) -> None:
     """Fire-and-forget wrapper to avoid blocking request/startup."""
     try:
-        t = threading.Thread(target=_autostart_pipeline_if_enabled, daemon=True)
+        t = threading.Thread(target=_autostart_pipeline_if_enabled, kwargs={'once': once}, daemon=True)
         t.start()
     except Exception:
         pass
@@ -3602,11 +3609,11 @@ def get_pipeline_status():
     auto_start_enabled = False
     try:
         cfg = load_config()
-        auto_start_enabled = _truthy(cfg.get('run_pipeline_after_start'))
+        auto_start_enabled = _pipeline_auto_start_enabled(cfg)
     except Exception:
         auto_start_enabled = False
     if auto_start_enabled and not is_running and not _PIPELINE_USER_STOPPED:
-        _kickoff_pipeline_autostart_background()
+        _kickoff_pipeline_autostart_background(once=False)
 
     status_path = _pipeline_status_path()
     if status_path.exists():
@@ -6079,6 +6086,11 @@ def save_pipeline_config():
 
         base_dir = Path(_repo_root_dir())
         save_effective_from_updates(base_dir, cleaned_updates)
+
+        if _pipeline_auto_start_enabled(cleaned_updates):
+            global _PIPELINE_USER_STOPPED
+            _PIPELINE_USER_STOPPED = False
+            _kickoff_pipeline_autostart_background(once=False)
 
         cfg = load_config()
         

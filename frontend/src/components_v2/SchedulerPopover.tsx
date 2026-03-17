@@ -34,7 +34,7 @@ const DAY_LABELS: { id: number; short: string; full: string }[] = [
   { id: 7, short: 'Sun', full: 'Sunday' },
 ];
 
-const MINUTE_OPTIONS = [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55];
+const MINUTE_OPTIONS = Array.from({ length: 60 }, (_, i) => i);
 const HOUR_OPTIONS = Array.from({ length: 24 }, (_, i) => i);
 
 const formatTime = (h: number, m: number) => `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;

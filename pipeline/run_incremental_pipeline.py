@@ -17,7 +17,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from lib.pipeline_config_manager import ensure_effective_config
+from lib.pipeline_config_manager import ensure_effective_config, get_config_paths
 
 from ai_secretary_core import pipeline_state
 from ai_secretary_core.paths import RepoPaths
@@ -36,7 +36,7 @@ _RUN_COMMAND_BASE_ENV: dict[str, str] | None = None
 def _load_schedule_config() -> dict:
     """Load schedule config from the effective pipeline_config.json."""
     try:
-        cfg_path = BASE_DIR / 'pipeline_config.json'
+        _, _, cfg_path = get_config_paths(BASE_DIR)
         if cfg_path.exists():
             with open(cfg_path, 'r', encoding='utf-8') as f:
                 cfg = json.load(f)
@@ -153,6 +153,59 @@ def _calculate_next_aligned_run(sched: dict, interval_minutes: int) -> datetime:
     # Fallback: just return now + interval
     print(f"[SCHEDULE DEBUG] Max iterations reached, using fallback")
     return now + interval_delta
+
+
+def _next_due_run_time(sched: dict, interval_minutes: int, *, grace_seconds: int = 60) -> datetime:
+    """Return the next scheduled slot, or now when a slot is currently due.
+
+    For schedule-enabled loops, this prevents an immediate mid-cycle run when the
+    pipeline process starts between aligned slots. Example: with 08:55 + every
+    60 minutes, a process starting at 13:52 should wait until 13:55 rather than
+    running immediately and skipping that aligned time.
+    """
+    now = datetime.now()
+    if not sched.get('schedule_enabled', False):
+        return now
+
+    interval_seconds = max(60, int(interval_minutes) * 60)
+    allowed_days = sched.get('schedule_days', [1, 2, 3, 4, 5])
+    start_hour = sched.get('schedule_start_hour', 8)
+    start_minute = sched.get('schedule_start_minute', 0)
+    end_hour = sched.get('schedule_end_hour', 17)
+    end_minute = sched.get('schedule_end_minute', 0)
+
+    from datetime import timedelta
+
+    for offset in range(8):
+        candidate_day = now + timedelta(days=offset)
+        if candidate_day.isoweekday() not in allowed_days:
+            continue
+
+        start_dt = candidate_day.replace(hour=start_hour, minute=start_minute, second=0, microsecond=0)
+        end_dt = candidate_day.replace(hour=end_hour, minute=end_minute, second=0, microsecond=0)
+
+        if offset > 0:
+            return start_dt
+
+        if now < start_dt:
+            return start_dt
+
+        if now >= end_dt:
+            continue
+
+        elapsed_seconds = (now - start_dt).total_seconds()
+        slots_passed = int(elapsed_seconds // interval_seconds)
+        last_slot = start_dt + timedelta(seconds=slots_passed * interval_seconds)
+        since_last_slot = (now - last_slot).total_seconds()
+
+        if 0 <= since_last_slot <= grace_seconds:
+            return now
+
+        next_slot = last_slot + timedelta(seconds=interval_seconds)
+        if next_slot < end_dt:
+            return next_slot
+
+    return _calculate_next_aligned_run(sched, interval_minutes)
 
 
 def _resolve_configured_data_folder_relpath(cfg: dict | None, *, base_dir: Path) -> str:
@@ -2354,7 +2407,7 @@ def main():
     if args.skip_backup:
         _BACKUP_ENABLED = False
 
-    base_dir = Path(__file__).parent.absolute()
+    base_dir = _pipeline_base_dir()
 
     # Ensure pipeline_config.json exists (fresh clone / no server started yet)
     cfg = {}
@@ -2410,6 +2463,17 @@ def main():
                     update_pipeline_status("sleeping", msg, next_run=next_window_iso)
                     time.sleep(min(wait_secs, 300))  # Re-check every 5 min max
                     continue
+
+                if sched.get('schedule_enabled', False):
+                    due_dt = _next_due_run_time(sched, interval)
+                    wait_until_due = max(0, int((due_dt - datetime.now()).total_seconds()))
+                    if wait_until_due > 0:
+                        due_iso = due_dt.isoformat()
+                        due_str = due_dt.strftime("%H:%M:%S")
+                        print(f"[SCHEDULE] Waiting for next aligned run at {due_str} (sleeping {wait_until_due}s)")
+                        update_pipeline_status("sleeping", f"Next run at {due_str}", next_run=due_iso)
+                        time.sleep(min(wait_until_due, 300))
+                        continue
 
                 print(f"\n[START] Pipeline run at {datetime.now()}")
                 # Before entering working state, snapshot incremental_data (optional).
