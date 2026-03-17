@@ -192,6 +192,9 @@ deploy.zip
 # Release artifacts
 release/
 
+# Built frontend output served by Flask
+static/app/
+
 # Temporary scratch files
 _tmp/
 
