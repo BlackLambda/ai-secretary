@@ -1873,6 +1873,11 @@ _APP_UPDATE_STATE = {
     'last_pull_exit_code': None,
     'last_pull_stdout': None,
     'last_pull_stderr': None,
+    'current': None,
+    'latest': None,
+    'server_commit': None,
+    'server_stale': False,
+    'message': None,
 }
 
 _APP_UPDATE_THREAD_STARTED = False
@@ -1975,11 +1980,22 @@ def _check_for_app_update():
         branch_r = _run_git(['rev-parse', '--abbrev-ref', 'HEAD'], timeout_sec=10)
         branch = _git_stdout(branch_r) if branch_r.returncode == 0 else None
         upstream = _pick_upstream()
+        head_r = _run_git(['rev-parse', 'HEAD'], timeout_sec=10)
+        local_head = _git_stdout(head_r) if head_r.returncode == 0 else None
 
         # Update remote refs.
         fetch_r = _run_git(['fetch', '--all', '--prune'], timeout_sec=60)
         if fetch_r.returncode != 0:
             raise RuntimeError(_git_stderr(fetch_r) or 'git fetch failed')
+
+        latest_r = _run_git(['rev-parse', upstream], timeout_sec=10)
+        remote_head = _git_stdout(latest_r) if latest_r.returncode == 0 else None
+
+        remote_msg = None
+        if remote_head:
+            msg_r = _run_git(['log', '-1', '--format=%s', upstream], timeout_sec=10)
+            if msg_r.returncode == 0:
+                remote_msg = _git_stdout(msg_r) or None
 
         behind_r = _run_git(['rev-list', '--count', f'HEAD..{upstream}'], timeout_sec=20)
         behind_by = 0
@@ -1994,6 +2010,11 @@ def _check_for_app_update():
             _APP_UPDATE_STATE['upstream'] = upstream
             _APP_UPDATE_STATE['behind_by'] = behind_by
             _APP_UPDATE_STATE['update_available'] = behind_by > 0
+            _APP_UPDATE_STATE['current'] = local_head[:8] if local_head else None
+            _APP_UPDATE_STATE['latest'] = remote_head[:8] if remote_head else None
+            _APP_UPDATE_STATE['server_commit'] = _SERVER_GIT_COMMIT[:8] if _SERVER_GIT_COMMIT else None
+            _APP_UPDATE_STATE['server_stale'] = bool(_SERVER_GIT_COMMIT and local_head and _SERVER_GIT_COMMIT != local_head)
+            _APP_UPDATE_STATE['message'] = remote_msg
             _APP_UPDATE_STATE['last_checked'] = _utc_now_iso()
             _APP_UPDATE_STATE['checking'] = False
     except Exception as e:
@@ -6108,14 +6129,21 @@ def _api_install_extension():
         """Open a new Edge window to the dashboard after a short pause."""
         import time as _t
         _t.sleep(1)
-        edge_exe = r'C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe'
-        if not os.path.exists(edge_exe):
-            edge_exe = r'C:\Program Files\Microsoft\Edge\Application\msedge.exe'
-        if os.path.exists(edge_exe):
-            try:
-                subprocess.Popen([edge_exe, '--no-first-run', url])
-            except Exception:
-                pass
+        candidates = [
+            r'C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe',
+            r'C:\Program Files\Microsoft\Edge\Application\msedge.exe',
+        ]
+        for edge_exe in candidates:
+            if os.path.exists(edge_exe):
+                try:
+                    subprocess.Popen([edge_exe, '--no-first-run', url])
+                    return
+                except Exception:
+                    pass
+        try:
+            subprocess.Popen(['cmd', '/c', 'start', '', 'microsoft-edge:' + url], shell=False)
+        except Exception:
+            pass
 
     try:
         result = subprocess.run(
@@ -6125,12 +6153,13 @@ def _api_install_extension():
         )
         output = (result.stdout or '') + (result.stderr or '')
         success = 'SUCCESS' in output and 'location = 4' in output
-        if success:
-            threading.Thread(target=_relaunch_edge, args=(relaunch_url,), daemon=True).start()
+        threading.Thread(target=_relaunch_edge, args=(relaunch_url,), daemon=True).start()
         return jsonify({'ok': success, 'output': output, 'returncode': result.returncode})
     except subprocess.TimeoutExpired:
+        threading.Thread(target=_relaunch_edge, args=(relaunch_url,), daemon=True).start()
         return jsonify({'ok': False, 'error': 'Installation timed out after 120 s.', 'output': ''})
     except Exception as exc:
+        threading.Thread(target=_relaunch_edge, args=(relaunch_url,), daemon=True).start()
         return jsonify({'ok': False, 'error': str(exc), 'output': ''})
 
 
@@ -6157,58 +6186,21 @@ _capture_startup_commit()
 
 @app.route('/api/check_update')
 def _api_check_update():
-    """Check if there are newer commits on origin/main compared to the running server."""
-    try:
-        # Fetch latest from remote (silent, fast)
-        subprocess.run(
-            ['git', 'fetch', 'origin', 'main', '--quiet'],
-            capture_output=True, text=True, timeout=15,
-            cwd=str(BASE_DIR)
-        )
-        # Get local HEAD
-        local = subprocess.run(
-            ['git', 'rev-parse', 'HEAD'],
-            capture_output=True, text=True, timeout=5,
-            cwd=str(BASE_DIR)
-        )
-        local_hash = local.stdout.strip() if local.returncode == 0 else None
-        # Get remote HEAD
-        remote = subprocess.run(
-            ['git', 'rev-parse', 'origin/main'],
-            capture_output=True, text=True, timeout=5,
-            cwd=str(BASE_DIR)
-        )
-        remote_hash = remote.stdout.strip() if remote.returncode == 0 else None
-        # Get the remote commit message for display
-        remote_msg = ''
-        if remote_hash:
-            msg_result = subprocess.run(
-                ['git', 'log', '-1', '--format=%s', 'origin/main'],
-                capture_output=True, text=True, timeout=5,
-                cwd=str(BASE_DIR)
-            )
-            if msg_result.returncode == 0:
-                remote_msg = msg_result.stdout.strip()
-
-        has_update = bool(
-            local_hash and remote_hash
-            and local_hash != remote_hash
-        )
-        # Also check if the server binary is stale (started with an older commit)
-        server_stale = bool(
-            _SERVER_GIT_COMMIT and local_hash
-            and _SERVER_GIT_COMMIT != local_hash
-        )
-        return jsonify({
-            'has_update': has_update,
-            'server_stale': server_stale,
-            'current': local_hash[:8] if local_hash else None,
-            'latest': remote_hash[:8] if remote_hash else None,
-            'server_commit': _SERVER_GIT_COMMIT[:8] if _SERVER_GIT_COMMIT else None,
-            'message': remote_msg,
-        })
-    except Exception as e:
-        return jsonify({'has_update': False, 'error': str(e)})
+    """Compatibility wrapper around the background git update checker state."""
+    with _APP_UPDATE_LOCK:
+        state = dict(_APP_UPDATE_STATE)
+    return jsonify({
+        'has_update': bool(state.get('update_available')),
+        'server_stale': bool(state.get('server_stale')),
+        'current': state.get('current'),
+        'latest': state.get('latest'),
+        'server_commit': state.get('server_commit'),
+        'message': state.get('message'),
+        'behind_by': state.get('behind_by', 0),
+        'checking': bool(state.get('checking')),
+        'upstream': state.get('upstream'),
+        'error': state.get('error'),
+    })
 
 
 if __name__ == '__main__':

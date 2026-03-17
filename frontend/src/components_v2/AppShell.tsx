@@ -127,15 +127,21 @@ export const AppShell: React.FC = () => {
     let cancelled = false;
     const check = async () => {
       try {
-        const info = await api.checkUpdate();
+        const info = await api.getAppUpdateStatus();
         if (!cancelled) setUpdateInfo(info);
       } catch { /* ignore */ }
     };
     check();
-    // Re-check every 5 minutes
-    const id = window.setInterval(check, 5 * 60_000);
+    // Re-check every minute so remote pushes surface promptly.
+    const id = window.setInterval(check, 60_000);
     return () => { cancelled = true; window.clearInterval(id); };
   }, []);
+
+  useEffect(() => {
+    if (updateInfo?.has_update || updateInfo?.server_stale) {
+      setUpdateDismissed(false);
+    }
+  }, [updateInfo?.current, updateInfo?.latest, updateInfo?.server_commit, updateInfo?.has_update, updateInfo?.server_stale]);
 
   // ---- AI error banner ----
   const [aiErrors, setAiErrors] = useState<Array<{ timestamp: string; message: string }>>([]);
