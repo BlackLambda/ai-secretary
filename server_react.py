@@ -17,7 +17,7 @@ import signal
 import shutil
 import atexit
 from pathlib import Path
-from lib.pipeline_config_manager import ensure_effective_config, save_effective_from_updates
+from lib.pipeline_config_manager import ensure_effective_config, get_config_paths, save_effective_from_updates
 
 from ai_secretary_core import json_io
 from ai_secretary_core import pipeline_state
@@ -5924,7 +5924,7 @@ def load_config():
     # If the effective file doesn't exist yet (fresh clone), generate it from
     # pipeline_config.default.json + pipeline_config.user.json.
     try:
-        effective_path = base_dir / 'pipeline_config.json'
+        default_path, _, effective_path = get_config_paths(base_dir)
         if not effective_path.exists():
             cfg = ensure_effective_config(base_dir)
         else:
@@ -5934,9 +5934,8 @@ def load_config():
             # If defaults gained new keys since this file was generated,
             # regenerate the effective config so UI/settings stay in sync.
             try:
-                defaults_path = base_dir / 'pipeline_config.default.json'
-                if defaults_path.exists():
-                    with defaults_path.open('r', encoding='utf-8') as df:
+                if default_path.exists():
+                    with default_path.open('r', encoding='utf-8') as df:
                         defaults = json.load(df) or {}
                     if isinstance(defaults, dict) and isinstance(cfg, dict):
                         if any(k not in cfg for k in defaults.keys()):
