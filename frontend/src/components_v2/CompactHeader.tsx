@@ -39,7 +39,7 @@ const ExtInstallGuide: React.FC<{ onClose: () => void }> = ({ onClose }) => {
       const res = await fetch('/api/install_extension', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ relaunch_url: 'ai-secretary://start' }),
+        body: JSON.stringify({ relaunch_url: window.location.origin }),
       });
       const data = await res.json();
       setAutoOk(data.ok ?? false);
