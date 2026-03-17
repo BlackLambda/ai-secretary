@@ -6329,7 +6329,11 @@ The server will serve:
     # Auto-trigger the pipeline after server start (opt-in).
     _kickoff_pipeline_autostart_background()
     
-    # In production, serve built React app
-    # In development, React dev server runs on port 3000 and proxies API calls
-    # Flask dev server is fine locally; on Azure run via a WSGI server (see AZURE_DEPLOY.md).
-    app.run(host=host, port=port, debug=not is_azure)
+    # In production, serve built React app.
+    # In development, React dev server runs on port 3000 and proxies API calls.
+    # On Windows, Werkzeug's debug reloader can fail with WinError 10038 when
+    # reusing the inherited listener socket, so keep the debugger but disable
+    # the reloader there.
+    debug_enabled = not is_azure
+    use_reloader = debug_enabled and os.name != 'nt'
+    app.run(host=host, port=port, debug=debug_enabled, use_reloader=use_reloader)
