@@ -196,6 +196,36 @@ if "%INSTALL_DEPS%"=="1" (
 echo.
 echo [Step 3] Preparing Runtime...
 
+if not exist "%~dp0frontend\package.json" (
+  echo [ERROR] Frontend package.json not found at "%~dp0frontend\package.json"
+  pause
+  exit /b 1
+)
+
+if not exist "%~dp0frontend\node_modules" (
+  echo [INFO] Frontend dependencies missing. Installing with npm ci...
+  pushd "%~dp0frontend"
+  call npm ci
+  set "NPM_EXIT_CODE=%ERRORLEVEL%"
+  popd
+  if %NPM_EXIT_CODE% NEQ 0 (
+    echo [ERROR] Failed to install frontend dependencies.
+    pause
+    exit /b %NPM_EXIT_CODE%
+  )
+)
+
+echo [INFO] Building frontend into static\app...
+pushd "%~dp0frontend"
+call npm run build
+set "FRONTEND_BUILD_EXIT_CODE=%ERRORLEVEL%"
+popd
+if %FRONTEND_BUILD_EXIT_CODE% NEQ 0 (
+  echo [ERROR] Frontend build failed.
+  pause
+  exit /b %FRONTEND_BUILD_EXIT_CODE%
+)
+
 echo.
 echo [Step 4] Starting Server + Browser...
 echo.
