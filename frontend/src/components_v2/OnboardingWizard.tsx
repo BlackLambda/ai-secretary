@@ -26,6 +26,22 @@ type FocusTopic = {
 };
 
 const STORAGE_KEY = 'ai_secretary.onboarding';
+const DEFAULT_COPILOT_MODEL = 'gemini-3-flash-preview';
+
+const prioritizeDefaultModel = (models: string[], defaultModel: string): string[] => {
+  const unique = Array.from(new Set((models || []).filter(Boolean)));
+  if (unique.includes(defaultModel)) {
+    return [defaultModel, ...unique.filter((m) => m !== defaultModel)];
+  }
+  return [defaultModel, ...unique];
+};
+
+const formatModelOptionLabel = (model: string, provider: 'azure' | 'copilot'): string => {
+  if (provider === 'copilot' && model === DEFAULT_COPILOT_MODEL) {
+    return `★ ${model} (default)`;
+  }
+  return model;
+};
 
 function loadSaved(): {
   step?: Step;
@@ -86,7 +102,7 @@ export const OnboardingWizard: React.FC<Props> = ({ onComplete }) => {
   const [modelLoading, setModelLoading] = useState<{ azure: boolean; copilot: boolean }>({ azure: false, copilot: false });
   const [modelLoadError, setModelLoadError] = useState('');
   const [azureModel, setAzureModel] = useState<string>(saved.azureModel ?? '');
-  const [copilotModel, setCopilotModel] = useState<string>(saved.copilotModel ?? '');
+  const [copilotModel, setCopilotModel] = useState<string>(saved.copilotModel ?? DEFAULT_COPILOT_MODEL);
 
   // Step 2 state
   const [focusLoading, setFocusLoading] = useState(false);
@@ -119,7 +135,9 @@ export const OnboardingWizard: React.FC<Props> = ({ onComplete }) => {
         if (cancelled) return;
         setModelOptions((prev) => ({
           azure: aiBackend === 'azure' ? (Array.isArray(res.azure) ? res.azure : []) : prev.azure,
-          copilot: aiBackend === 'copilot' ? (Array.isArray(res.copilot) ? res.copilot : []) : prev.copilot,
+          copilot: aiBackend === 'copilot'
+            ? prioritizeDefaultModel(Array.isArray(res.copilot) ? res.copilot : [], DEFAULT_COPILOT_MODEL)
+            : prev.copilot,
         }));
       })
       .catch(() => {
@@ -156,6 +174,17 @@ export const OnboardingWizard: React.FC<Props> = ({ onComplete }) => {
       try {
         const res = await api.getCopilotStatus();
         setCopilotLoggedIn(!!res?.logged_in);
+        if (res?.logged_in) {
+          try {
+            const models = await api.getAiModels('copilot');
+            setModelOptions((prev) => ({
+              ...prev,
+              copilot: prioritizeDefaultModel(Array.isArray(models.copilot) ? models.copilot : [], DEFAULT_COPILOT_MODEL),
+            }));
+          } catch {
+            // ignore
+          }
+        }
       } catch {
         setCopilotLoggedIn(false);
       }
@@ -182,6 +211,16 @@ export const OnboardingWizard: React.FC<Props> = ({ onComplete }) => {
       setCopilotDeviceFlow(null);
       if (result.status === 'complete') {
         setCopilotLoggedIn(true);
+        try {
+          const models = await api.getAiModels('copilot');
+          setModelOptions((prev) => ({
+            ...prev,
+            copilot: prioritizeDefaultModel(Array.isArray(models.copilot) ? models.copilot : [], DEFAULT_COPILOT_MODEL),
+          }));
+        } catch {
+          // ignore
+        }
+        setCopilotModel((prev) => prev || DEFAULT_COPILOT_MODEL);
       } else {
         setCopilotLoginError(result.error || 'Login failed');
       }
@@ -520,7 +559,7 @@ export const OnboardingWizard: React.FC<Props> = ({ onComplete }) => {
                         : 'No models available'}
                   </option>
                   {selectedModelOptions.map((m) => (
-                    <option key={m} value={m}>{m}</option>
+                    <option key={m} value={m}>{formatModelOptionLabel(m, aiBackend)}</option>
                   ))}
                 </select>
                 <button

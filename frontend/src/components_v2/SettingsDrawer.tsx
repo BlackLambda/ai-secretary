@@ -34,6 +34,23 @@ interface Props {
 
 type Tab = 'profile' | 'topics' | 'ai' | 'config' | 'data';
 
+const DEFAULT_COPILOT_MODEL = 'gemini-3-flash-preview';
+
+const prioritizeDefaultModel = (models: string[], defaultModel: string): string[] => {
+  const unique = Array.from(new Set((models || []).filter(Boolean)));
+  if (unique.includes(defaultModel)) {
+    return [defaultModel, ...unique.filter((m) => m !== defaultModel)];
+  }
+  return [defaultModel, ...unique];
+};
+
+const formatModelOptionLabel = (model: string, provider: 'azure' | 'copilot'): string => {
+  if (provider === 'copilot' && model === DEFAULT_COPILOT_MODEL) {
+    return `★ ${model} (default)`;
+  }
+  return model;
+};
+
 /* ------------------------------------------------------------------ */
 /*  Component                                                          */
 /* ------------------------------------------------------------------ */
@@ -149,7 +166,7 @@ export const SettingsDrawer: React.FC<Props> = ({ open, onClose, onPipelineActio
 
   // AI provider / model state
   const [aiBackend, setAiBackend] = useState<'azure' | 'copilot'>('azure');
-  const [copilotModel, setCopilotModel] = useState('gpt-4o');
+  const [copilotModel, setCopilotModel] = useState(DEFAULT_COPILOT_MODEL);
   const [azureModel, setAzureModel] = useState('gpt-5.1');
   const [modelOptions, setModelOptions] = useState<{ azure: string[]; copilot: string[] }>({ azure: [], copilot: [] });
   const [copilotLoggedIn, setCopilotLoggedIn] = useState<boolean | null>(null);
@@ -164,10 +181,25 @@ export const SettingsDrawer: React.FC<Props> = ({ open, onClose, onPipelineActio
   const [pingResult, setPingResult] = useState<{ ok: boolean; reply?: string; model?: string; elapsed_s?: number; error?: string } | null>(null);
   const [pingLoading, setPingLoading] = useState(false);
 
+  const refreshAiModels = useCallback(async (provider?: 'azure' | 'copilot') => {
+    try {
+      const models = await api.getAiModels(provider);
+      setModelOptions((prev) => ({
+        azure: provider === 'copilot' ? prev.azure : models.azure,
+        copilot: prioritizeDefaultModel(
+          provider === 'azure' ? prev.copilot : models.copilot,
+          DEFAULT_COPILOT_MODEL,
+        ),
+      }));
+    } catch {
+      // ignore
+    }
+  }, []);
+
   // Fetch model lists once
   useEffect(() => {
-    api.getAiModels().then(setModelOptions).catch(() => {});
-  }, []);
+    refreshAiModels();
+  }, [refreshAiModels]);
 
   // Check Azure CLI status when azure backend is selected
   useEffect(() => {
@@ -189,11 +221,14 @@ export const SettingsDrawer: React.FC<Props> = ({ open, onClose, onPipelineActio
       try {
         const res = await api.getCopilotStatus();
         setCopilotLoggedIn(!!res?.logged_in);
+        if (res?.logged_in) {
+          refreshAiModels('copilot');
+        }
       } catch {
         setCopilotLoggedIn(false);
       }
     })();
-  }, [aiBackend]);
+  }, [aiBackend, refreshAiModels]);
 
   const handleCopilotLogin = useCallback(async () => {
     setCopilotLoginLoading(true);
@@ -212,6 +247,8 @@ export const SettingsDrawer: React.FC<Props> = ({ open, onClose, onPipelineActio
       setCopilotDeviceFlow(null);
       if (result.status === 'complete') {
         setCopilotLoggedIn(true);
+        await refreshAiModels('copilot');
+        setCopilotModel((prev) => prev || DEFAULT_COPILOT_MODEL);
       } else {
         setCopilotLoginError(result.error || 'Login failed');
       }
@@ -556,7 +593,7 @@ export const SettingsDrawer: React.FC<Props> = ({ open, onClose, onPipelineActio
               }}
             >
               {(aiBackend === 'copilot' ? modelOptions.copilot : modelOptions.azure).map((m) => (
-                <option key={m} value={m}>{m}</option>
+                <option key={m} value={m}>{formatModelOptionLabel(m, aiBackend)}</option>
               ))}
             </select>
           </label>
