@@ -6126,9 +6126,19 @@ def _api_install_extension():
     relaunch_url = body.get('relaunch_url', 'http://localhost:5000')
 
     def _relaunch_edge(url: str):
-        """Open a new Edge window to the dashboard after a short pause."""
+        """Relaunch the app or open a new Edge window after a short pause."""
         import time as _t
         _t.sleep(1)
+        if str(url or '').lower().startswith('ai-secretary://'):
+            try:
+                os.startfile(url)  # type: ignore[attr-defined]
+                return
+            except Exception:
+                try:
+                    subprocess.Popen(['cmd', '/c', 'start', '', url], shell=False)
+                    return
+                except Exception:
+                    pass
         candidates = [
             r'C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe',
             r'C:\Program Files\Microsoft\Edge\Application\msedge.exe',

@@ -35,12 +35,11 @@ const ExtInstallGuide: React.FC<{ onClose: () => void }> = ({ onClose }) => {
     setStep('auto-running');
     setAutoOutput('');
     setAutoOk(null);
-    const port = window.location.port || '5000';
     try {
       const res = await fetch('/api/install_extension', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ relaunch_url: `${window.location.protocol}//${window.location.hostname}:${port}` }),
+        body: JSON.stringify({ relaunch_url: 'ai-secretary://start' }),
       });
       const data = await res.json();
       setAutoOk(data.ok ?? false);
@@ -110,19 +109,19 @@ const ExtInstallGuide: React.FC<{ onClose: () => void }> = ({ onClose }) => {
             <div className="ext-guide-spinner" />
             <p><strong>Installing…</strong></p>
             <p className="ext-guide-auto-hint">This browser window will close shortly.</p>
-            <p className="ext-guide-auto-hint">Edge will reopen automatically once installation is complete.</p>
+            <p className="ext-guide-auto-hint">AI Secretary will relaunch automatically once installation is complete.</p>
           </div>
         )}
 
         {step === 'auto-done' && (
           <>
             <div className={`ext-guide-result ${autoOk ? 'success' : 'failure'}`}>
-              {autoOk ? '✅ Extension installed! Reopening Edge…' : '❌ Installation failed'}
+              {autoOk ? '✅ Extension installed! Relaunching AI Secretary…' : '❌ Installation failed'}
             </div>
             <pre className="ext-guide-output">{autoOutput}</pre>
             {autoOk && (
               <p className="ext-guide-note" style={{ marginTop: 8 }}>
-                Edge is reopening to this page automatically.
+                AI Secretary is relaunching automatically.
               </p>
             )}
             {!autoOk && (
