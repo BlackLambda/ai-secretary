@@ -157,6 +157,31 @@ def _clip(text: str, limit: int) -> str:
     return t if len(t) <= limit else (t[: max(0, limit - 1)] + "…")
 
 
+def _first_profile_value(value: Any) -> str:
+    if isinstance(value, list):
+        for item in value:
+            text = str(item or "").strip()
+            if text:
+                return text
+        return ""
+    return str(value or "").strip()
+
+
+def _load_dataset_profile_identity(profile_path: str) -> Tuple[str, str]:
+    """Return (display_name, primary_email) from the app dataset profile."""
+    if not os.path.exists(profile_path):
+        raise FileNotFoundError(f"Missing dataset profile: {profile_path}")
+
+    profile = _read_json(profile_path)
+    display_name = _first_profile_value(profile.get("USER_NAME"))
+    primary_email = _norm_email(_first_profile_value(profile.get("USER_EMAIL")))
+
+    if not primary_email:
+        raise RuntimeError(f"Could not read USER_EMAIL from {profile_path}")
+
+    return display_name, primary_email
+
+
 def _load_my_upn(substrate_output_dir: str) -> str:
     profile_path = os.path.join(substrate_output_dir, "user_profile.json")
     if not os.path.exists(profile_path):
@@ -208,6 +233,7 @@ def _iter_email_identities(obj: Any) -> List[Tuple[str, str]]:
 
 def _discover_my_addresses(
     substrate_output_dir: str,
+    dataset_profile_path: Optional[str] = None,
     teams_path: Optional[str] = None,
     emails_path: Optional[str] = None,
     calendar_path: Optional[str] = None,
@@ -218,8 +244,11 @@ def _discover_my_addresses(
     (e.g. alias@ vs First.Last@). We infer plausible variants by scanning payloads
     for an identity matching the user's display name.
     """
-    upn = _load_my_upn(substrate_output_dir)
-    display_name = _load_my_display_name(substrate_output_dir)
+    if dataset_profile_path and os.path.exists(dataset_profile_path):
+        display_name, upn = _load_dataset_profile_identity(dataset_profile_path)
+    else:
+        upn = _load_my_upn(substrate_output_dir)
+        display_name = _load_my_display_name(substrate_output_dir)
 
     addresses = {_norm_email(upn)}
 
@@ -972,11 +1001,16 @@ def main() -> int:
     if not os.path.isdir(substrate_dir):
         raise FileNotFoundError(f"Substrate dir not found: {substrate_dir}")
 
-    profile_path = os.path.join(substrate_output, "user_profile.json")
-    _write_progress(1, TOTAL_STEPS, "Fetching user profile")
-    if not os.path.exists(profile_path) and not args.no_fetch:
-        print("[INFO] user_profile.json not found; fetching user profile via Substrate…")
+    dataset_profile_path = str(Path(args.output).resolve().parent.parent / "user_profile.json")
+    legacy_profile_path = os.path.join(substrate_output, "user_profile.json")
+    _write_progress(1, TOTAL_STEPS, "Checking user profile")
+    if os.path.exists(dataset_profile_path):
+        print(f"[INFO] Using dataset user profile: {dataset_profile_path}")
+    elif not os.path.exists(legacy_profile_path) and not args.no_fetch:
+        print("[INFO] Dataset user_profile.json not found; fetching legacy Substrate profile…")
         _run_py(cwd=substrate_dir, args=["get_user_profile.py"])
+    elif os.path.exists(legacy_profile_path):
+        print(f"[INFO] Using legacy Substrate profile: {legacy_profile_path}")
 
     # Paths (used for identity inference and later reads)
     teams_out_name = "teams_messages_recent.json"
@@ -1001,6 +1035,7 @@ def main() -> int:
 
     my_display_name, my_addresses = _discover_my_addresses(
         substrate_output,
+        dataset_profile_path=dataset_profile_path,
         teams_path=teams_path,
         emails_path=emails_path,
         calendar_path=calendar_path,
