@@ -4,6 +4,17 @@ import shutil
 from pathlib import Path
 
 
+def _remove_path_best_effort(path: Path) -> None:
+    try:
+        if path.is_symlink() or path.is_file():
+            path.unlink()
+            return
+        if path.exists():
+            shutil.rmtree(path, ignore_errors=True)
+    except Exception:
+        pass
+
+
 def incremental_data_path(
     base_dir: Path,
     incremental_dirname: str = "incremental_data",
@@ -48,9 +59,11 @@ def delete_stale_backup_if_coexists(
     """
     src = incremental_data_path(base_dir, incremental_dirname=incremental_dirname)
     backup = incremental_backup_path(base_dir, backup_dirname=backup_dirname)
+    tmp = backup.with_name(f"{backup.name}.tmp")
     try:
+        _remove_path_best_effort(tmp)
         if src.exists() and backup.exists():
-            shutil.rmtree(backup, ignore_errors=True)
+            _remove_path_best_effort(backup)
     except Exception:
         pass
 
@@ -69,17 +82,14 @@ def create_incremental_backup(
     if not src.exists():
         src.mkdir(parents=True, exist_ok=True)
 
-    if tmp.exists():
-        shutil.rmtree(tmp, ignore_errors=True)
-    if backup.exists():
-        shutil.rmtree(backup, ignore_errors=True)
+    _remove_path_best_effort(tmp)
+    _remove_path_best_effort(backup)
 
     shutil.copytree(src, tmp)
 
     # Move tmp into place (best-effort atomic on same volume).
     try:
-        if backup.exists():
-            shutil.rmtree(backup, ignore_errors=True)
+        _remove_path_best_effort(backup)
     except Exception:
         pass
     shutil.move(str(tmp), str(backup))
@@ -98,8 +108,7 @@ def restore_incremental_from_backup(
         return False
 
     try:
-        if src.exists():
-            shutil.rmtree(src, ignore_errors=True)
+        _remove_path_best_effort(src)
         shutil.move(str(backup), str(src))
         return True
     except Exception:
@@ -112,8 +121,7 @@ def delete_incremental_backup(
 ) -> None:
     backup = incremental_backup_path(base_dir, backup_dirname=backup_dirname)
     try:
-        if backup.exists():
-            shutil.rmtree(backup, ignore_errors=True)
+        _remove_path_best_effort(backup)
     except Exception:
         pass
 
@@ -125,7 +133,7 @@ def delete_incremental_data_dir(
     src = incremental_data_path(base_dir, incremental_dirname=incremental_dirname)
     try:
         if src.exists():
-            shutil.rmtree(src, ignore_errors=True)
+            _remove_path_best_effort(src)
             return True
     except Exception:
         return False

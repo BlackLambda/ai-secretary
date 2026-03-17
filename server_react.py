@@ -2438,6 +2438,12 @@ _FOCUS_ANALYSIS_PROC: subprocess.Popen | None = None
 _FOCUS_ANALYSIS_LOCK = threading.Lock()
 
 
+def _focus_analysis_proc_is_running() -> bool:
+    with _FOCUS_ANALYSIS_LOCK:
+        proc = _FOCUS_ANALYSIS_PROC
+        return proc is not None and proc.poll() is None
+
+
 def _recent_focus_output_path() -> str:
     """Dataset-aware recent_focus.json path."""
     try:
@@ -2465,7 +2471,14 @@ def analyze_recent_focus():
         days = max(0, min(60, days))
 
         output_path = _recent_focus_output_path()
+        progress_path = output_path + '.progress.json'
         no_fetch = data.get('no_fetch', False)
+
+        try:
+            if os.path.exists(progress_path):
+                os.remove(progress_path)
+        except Exception:
+            pass
 
         cmd = [
             sys.executable,
@@ -2574,8 +2587,18 @@ def focus_analysis_progress():
         with open(progress_path, 'r', encoding='utf-8') as f:
             data = json.load(f)
 
+        proc_running = _focus_analysis_proc_is_running()
+        percent = data.get('percent', 0)
+        if proc_running:
+            status = 'running'
+        elif percent >= 100:
+            status = 'done'
+        else:
+            status = 'idle'
+            data = {'step': 0, 'total': 0, 'label': '', 'percent': 0}
+
         return jsonify({
-            'status': 'running' if data.get('percent', 0) < 100 else 'done',
+            'status': status,
             'step': data.get('step', 0),
             'total': data.get('total', 0),
             'label': data.get('label', ''),
