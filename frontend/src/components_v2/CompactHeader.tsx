@@ -3,52 +3,15 @@
  *
  * Layout:  [Logo/Title]  [subtitle + status dot]  [overflow actions]
  */
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef } from 'react';
 import './CompactHeader.css';
 import { SchedulerPopover, ScheduleConfig } from './SchedulerPopover';
-
-/* ---- Extension install guide modal ---- */
-type ExtStep = 'choose' | 'confirm' | 'auto-running' | 'auto-done' | 'manual';
 
 const ExtInstallGuide: React.FC<{ onClose: () => void }> = ({ onClose }) => {
   const backdropRef = useRef<HTMLDivElement>(null);
   const isEdge = /Edg\//i.test(navigator.userAgent);
   const browser = isEdge ? 'Edge' : 'Chrome';
   const extensionsUrl = isEdge ? 'edge://extensions' : 'chrome://extensions';
-
-  const [step, setStep] = useState<ExtStep>('choose');
-  const [autoOutput, setAutoOutput] = useState('');
-  const [autoOk, setAutoOk] = useState<boolean | null>(null);
-  const [countdown, setCountdown] = useState(3);
-  const installingRef = useRef(false);
-
-  useEffect(() => {
-    if (step !== 'confirm') return;
-    if (countdown <= 0) { startInstall(); return; }
-    const t = setTimeout(() => setCountdown(c => c - 1), 1000);
-    return () => clearTimeout(t);
-  }, [step, countdown]);
-
-  const startInstall = async () => {
-    if (installingRef.current) return;
-    installingRef.current = true;
-    setStep('auto-running');
-    setAutoOutput('');
-    setAutoOk(null);
-    try {
-      const res = await fetch('/api/install_extension', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ relaunch_url: window.location.origin }),
-      });
-      const data = await res.json();
-      setAutoOk(data.ok ?? false);
-      setAutoOutput(data.output || data.error || '(no output)');
-      setStep('auto-done');
-    } catch (_err) {
-      // Edge may be killed mid-install. Backend relaunches it.
-    }
-  };
 
   return (
     <div
@@ -59,128 +22,53 @@ const ExtInstallGuide: React.FC<{ onClose: () => void }> = ({ onClose }) => {
       <div className="ext-guide-modal">
         <button className="ext-guide-close" onClick={onClose} title="Close">✕</button>
         <h2 className="ext-guide-title">🧩 Install Browser Extension</h2>
+        <p className="ext-guide-intro">
+          The AI Secretary browser extension lets you view your prioritised tasks
+          from the toolbar without opening the full dashboard.
+        </p>
 
-        {step === 'choose' && (
-          <>
-            <p className="ext-guide-intro">
-              The AI Secretary browser extension lets you view your prioritised tasks
-              from the toolbar — without opening the full dashboard.
-            </p>
-            <p className="ext-guide-intro" style={{ marginTop: 4 }}>
-              How would you like to install it?
-            </p>
-            <div className="ext-guide-choose-row">
-              <button className="ext-guide-auto-btn" onClick={() => { setCountdown(3); installingRef.current = false; setStep('confirm'); }}>
-                ⚡ Auto-install
-                <span className="ext-guide-auto-hint">Runs the installer script automatically</span>
-              </button>
-              <button className="ext-guide-manual-btn" onClick={() => setStep('manual')}>
-                🛠 Manual
-                <span className="ext-guide-auto-hint">Step-by-step instructions</span>
-              </button>
-            </div>
-          </>
-        )}
-
-        {step === 'confirm' && (
-          <div className="ext-guide-confirm">
-            <div className="ext-guide-confirm-icon">⚠️</div>
-            <p className="ext-guide-confirm-msg">
-              <strong>This browser window will close</strong> while the extension is
-              installed, then reopen automatically to this page.
-            </p>
-            <div className="ext-guide-countdown">
-              <span className="ext-guide-countdown-ring">{countdown}</span>
-              <span className="ext-guide-countdown-label">second{countdown !== 1 ? 's' : ''} — continuing automatically</span>
-            </div>
-            <div className="ext-guide-confirm-btns">
-              <button className="ext-guide-confirm-continue" onClick={() => setCountdown(0)}>
-                ✓ Continue now
-              </button>
-              <button className="ext-guide-confirm-cancel" onClick={() => { setCountdown(3); setStep('choose'); }}>
-                ✕ Cancel
-              </button>
-            </div>
-          </div>
-        )}
-
-        {step === 'auto-running' && (
-          <div className="ext-guide-auto-running">
-            <div className="ext-guide-spinner" />
-            <p><strong>Installing…</strong></p>
-            <p className="ext-guide-auto-hint">This browser window will close shortly.</p>
-            <p className="ext-guide-auto-hint">AI Secretary will relaunch automatically once installation is complete.</p>
-          </div>
-        )}
-
-        {step === 'auto-done' && (
-          <>
-            <div className={`ext-guide-result ${autoOk ? 'success' : 'failure'}`}>
-              {autoOk ? '✅ Extension installed! Relaunching AI Secretary…' : '❌ Installation failed'}
-            </div>
-            <pre className="ext-guide-output">{autoOutput}</pre>
-            {autoOk && (
-              <p className="ext-guide-note" style={{ marginTop: 8 }}>
-                AI Secretary is relaunching automatically.
-              </p>
-            )}
-            {!autoOk && (
-              <p className="ext-guide-note" style={{ marginTop: 8 }}>
-                Try the <button className="ext-guide-link-btn" onClick={() => setStep('manual')}>manual steps</button> or re-run the installer from a terminal.
-              </p>
-            )}
-            <div className="ext-guide-footer">
-              <button className="ext-guide-done-btn" onClick={onClose}>Close</button>
-            </div>
-          </>
-        )}
-
-        {step === 'manual' && (
-          <>
-            <ol className="ext-guide-steps">
-              <li>
-                <strong>Download</strong> the extension package:
-                <button
-                  className="ext-guide-download-btn"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    const a = document.createElement('a');
-                    a.href = '/api/extension_zip';
-                    a.download = 'ai_secretary_extension.zip';
-                    document.body.appendChild(a);
-                    a.click();
-                    document.body.removeChild(a);
-                  }}
-                >
-                  ⬇ Download ai_secretary_extension.zip
-                </button>
-              </li>
-              <li>
-                <strong>Extract</strong> the zip file to a permanent folder
-                <span className="ext-guide-hint">(e.g. <code>C:\tools\ai_secretary_extension</code>)</span>
-              </li>
-              <li>
-                <strong>Open</strong> {browser} extensions page:
-                <button
-                  className="ext-guide-copy-btn"
-                  onClick={() => { navigator.clipboard.writeText(extensionsUrl); }}
-                  title="Copy to clipboard"
-                >
-                  📋 {extensionsUrl}
-                </button>
-              </li>
-              <li><strong>Enable</strong> <em>"Developer mode"</em> (toggle in the top-right corner)</li>
-              <li><strong>Click</strong> <em>"Load unpacked"</em> and select the extracted <code>browser_extension</code> folder</li>
-              <li><strong>Pin</strong> the extension — click the puzzle icon (🧩) in the toolbar, then the pin icon next to "AI Secretary"</li>
-            </ol>
-            <div className="ext-guide-footer">
-              <span className="ext-guide-note">
-                After installing, refresh this page — the button will turn green ✓
-              </span>
-              <button className="ext-guide-done-btn" onClick={onClose}>Done</button>
-            </div>
-          </>
-        )}
+        <ol className="ext-guide-steps">
+          <li>
+            <strong>Download</strong> the extension package:
+            <button
+              className="ext-guide-download-btn"
+              onClick={(e) => {
+                e.stopPropagation();
+                const a = document.createElement('a');
+                a.href = '/api/extension_zip';
+                a.download = 'ai_secretary_extension.zip';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+              }}
+            >
+              ⬇ Download ai_secretary_extension.zip
+            </button>
+          </li>
+          <li>
+            <strong>Extract</strong> the zip file to a permanent folder
+            <span className="ext-guide-hint">(e.g. <code>C:\tools\ai_secretary_extension</code>)</span>
+          </li>
+          <li>
+            <strong>Open</strong> {browser} extensions page:
+            <button
+              className="ext-guide-copy-btn"
+              onClick={() => { navigator.clipboard.writeText(extensionsUrl); }}
+              title="Copy to clipboard"
+            >
+              📋 {extensionsUrl}
+            </button>
+          </li>
+          <li><strong>Enable</strong> <em>"Developer mode"</em> (toggle in the top-right corner)</li>
+          <li><strong>Click</strong> <em>"Load unpacked"</em> and select the extracted <code>browser_extension</code> folder</li>
+          <li><strong>Pin</strong> the extension — click the puzzle icon (🧩) in the toolbar, then the pin icon next to "AI Secretary"</li>
+        </ol>
+        <div className="ext-guide-footer">
+          <span className="ext-guide-note">
+            After installing, refresh this page — the button will turn green ✓
+          </span>
+          <button className="ext-guide-done-btn" onClick={onClose}>Done</button>
+        </div>
       </div>
     </div>
   );
