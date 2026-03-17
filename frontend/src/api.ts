@@ -645,19 +645,26 @@ export const api = {
 
   // Read-only: check whether the repo is behind its upstream.
   async getAppUpdateStatus(): Promise<{
-    update_available: boolean;
-    behind_by: number;
-    checking?: boolean;
-    last_checked?: string | null;
-    error?: string | null;
-    branch?: string | null;
-    upstream?: string | null;
+    has_update: boolean;
+    server_stale?: boolean;
+    current?: string;
+    latest?: string;
+    server_commit?: string;
+    message?: string;
   }> {
     const response = await fetch(`${API_BASE}/app_update_status`);
     if (!response.ok) {
       throw new Error('Failed to fetch app update status');
     }
-    return response.json();
+    const data: any = await response.json().catch(() => null);
+    return {
+      has_update: !!data?.update_available,
+      server_stale: !!data?.server_stale,
+      current: typeof data?.current === 'string' ? data.current : undefined,
+      latest: typeof data?.latest === 'string' ? data.latest : undefined,
+      server_commit: typeof data?.server_commit === 'string' ? data.server_commit : undefined,
+      message: typeof data?.message === 'string' ? data.message : undefined,
+    };
   },
 
   // Return available model lists per AI provider.
