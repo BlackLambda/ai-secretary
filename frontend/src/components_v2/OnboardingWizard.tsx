@@ -93,6 +93,7 @@ export const OnboardingWizard: React.FC<Props> = ({ onComplete }) => {
   const [focusSummary, setFocusSummary] = useState(saved.focusSummary ?? '');
   const [focusTopics, setFocusTopics] = useState<FocusTopic[]>(saved.focusTopics ?? []);
   const [focusError, setFocusError] = useState('');
+  const focusRunIdRef = useRef(0);
 
   // Step 1 Next button validation state
   const [nextChecking, setNextChecking] = useState(false);
@@ -300,10 +301,12 @@ export const OnboardingWizard: React.FC<Props> = ({ onComplete }) => {
   /* --------------------------------------------------------------- */
 
   const handleAnalyzeFocus = useCallback(async () => {
+    const runId = ++focusRunIdRef.current;
     setFocusLoading(true);
     setFocusError('');
     try {
       const res: any = await api.analyzeRecentFocus(7);
+      if (focusRunIdRef.current !== runId) return;
       const report = res?.report;
       const focus = report?.focus;
       setFocusSummary(String(focus?.summary ?? '').trim());
@@ -319,11 +322,27 @@ export const OnboardingWizard: React.FC<Props> = ({ onComplete }) => {
         })),
       );
     } catch (e: any) {
+      if (focusRunIdRef.current !== runId) return;
       setFocusError(e?.message || 'Failed to analyze recent focus');
     } finally {
+      if (focusRunIdRef.current !== runId) return;
       setFocusLoading(false);
     }
   }, []);
+
+  const handleSkipFocus = useCallback(async () => {
+    focusRunIdRef.current += 1;
+    if (focusLoading) {
+      try {
+        await api.cancelRecentFocus();
+      } catch {
+        // Best-effort.
+      }
+    }
+    setFocusLoading(false);
+    setFocusError('');
+    setStep(3);
+  }, [focusLoading]);
 
   // (No auto-trigger — user clicks Analyze to start)
 
@@ -708,6 +727,7 @@ export const OnboardingWizard: React.FC<Props> = ({ onComplete }) => {
                       className="v2-btn v2-btn-secondary v2-btn-sm"
                       style={{ marginTop: '8px', alignSelf: 'center' }}
                       onClick={async () => {
+                        focusRunIdRef.current += 1;
                         await api.cancelRecentFocus();
                         setFocusLoading(false);
                         setFocusError('Analysis cancelled.');
@@ -744,6 +764,12 @@ export const OnboardingWizard: React.FC<Props> = ({ onComplete }) => {
 
               <div className="v2-step-actions">
                 <button className="v2-btn v2-btn-secondary" onClick={() => setStep(1)}>← Back</button>
+                <button
+                  className="v2-btn v2-btn-secondary"
+                  onClick={handleSkipFocus}
+                >
+                  Skip for now →
+                </button>
                 <button
                   className="v2-btn v2-btn-secondary"
                   onClick={handleAnalyzeFocus}
