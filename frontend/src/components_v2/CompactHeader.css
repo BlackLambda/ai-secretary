@@ -1,0 +1,711 @@
+/* CompactHeader.css — v2 minimal header */
+
+.v2-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 24px;
+  background: #fff;
+  border-bottom: 1px solid #e9ecef;
+  position: sticky;
+  top: 0;
+  z-index: 200;
+  gap: 16px;
+}
+
+/* Left: logo + title */
+.v2-header-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.v2-header-logo {
+  font-size: 22px;
+  line-height: 1;
+}
+
+.v2-header-titles {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.v2-header-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: #2c3e50;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+}
+
+.v2-header-meta {
+  font-size: 11px;
+  color: #95a5a6;
+  line-height: 1.2;
+}
+
+/* Center: subtitle + status */
+.v2-header-center {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1 1 auto;
+  justify-content: center;
+  min-width: 0;
+}
+
+.v2-header-subtitle {
+  font-size: 12px;
+  color: #7f8c8d;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.v2-status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.v2-status-dot.pulse {
+  animation: v2-pulse 2s ease-in-out infinite;
+}
+
+@keyframes v2-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+.v2-header-status-label {
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+/* AI provider/model badge */
+.v2-header-ai-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 500;
+  padding: 2px 8px;
+  border-radius: 10px;
+  white-space: nowrap;
+  line-height: 1.3;
+}
+.v2-header-ai-badge.azure {
+  background: #e8f0fe;
+  color: #1a73e8;
+}
+.v2-header-ai-badge.copilot {
+  background: #f0f5e8;
+  color: #3d7a1a;
+}
+
+/* Pipeline progress (visible when running) */
+.v2-header-pipeline-progress {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.v2-header-progress-track {
+  width: 80px;
+  height: 4px;
+  background: #ecf0f1;
+  border-radius: 2px;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.v2-header-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #27ae60, #2ecc71);
+  border-radius: 2px;
+  transition: width 1s linear;
+}
+
+.v2-header-progress-text {
+  font-size: 11px;
+  color: #7f8c8d;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 200px;
+}
+
+/* Mobile progress strip — hidden on desktop, shown on mobile */
+.v2-header-mobile-progress {
+  display: none;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 12px;
+  background: #f8f9fa;
+  border-bottom: 1px solid #e9ecef;
+  position: sticky;
+  top: 49px;
+  z-index: 199;
+}
+
+.v2-header-mobile-progress-fill {
+  height: 3px;
+  background: linear-gradient(90deg, #27ae60, #2ecc71);
+  border-radius: 2px;
+  transition: width 1s linear;
+  flex: 0 0 auto;
+  width: 0;
+  min-width: 0;
+}
+
+.v2-header-mobile-progress-label {
+  font-size: 11px;
+  color: #7f8c8d;
+  white-space: nowrap;
+  flex: 1;
+}
+
+/* Right: icon buttons + overflow */
+.v2-header-right {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+  position: relative;
+}
+
+.v2-header-icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  border: none;
+  background: transparent;
+  color: #7f8c8d;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.v2-header-icon-btn:hover {
+  background: #f0f0f0;
+  color: #2c3e50;
+}
+
+.v2-header-icon-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* Extension install / status button */
+.v2-ext-btn {
+  position: relative;
+}
+
+/* Scheduler button */
+.v2-sched-btn {
+  position: relative;
+  color: #7f8c8d;
+}
+.v2-sched-btn.active {
+  color: #1a73e8;
+}
+.v2-sched-btn.active:hover {
+  background: #e8f0fe;
+}
+.v2-sched-dot {
+  position: absolute;
+  bottom: 4px;
+  right: 4px;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #27ae60;
+  border: 1.5px solid #fff;
+}
+.v2-ext-btn:not(.installed) {
+  color: #2980b9;
+  animation: ext-pulse 2s ease-in-out infinite;
+}
+.v2-ext-btn:not(.installed):hover {
+  background: #ebf5fb;
+  color: #1a5276;
+}
+.v2-ext-btn.installed {
+  color: #27ae60;
+  opacity: 0.7;
+}
+.v2-ext-check {
+  position: absolute;
+  bottom: 2px;
+  right: 2px;
+  font-size: 10px;
+  font-weight: 700;
+  color: #27ae60;
+  line-height: 1;
+}
+@keyframes ext-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+/* Pipeline action button (always visible) */
+.v2-header-pipeline-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 14px;
+  border-radius: 8px;
+  border: none;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, box-shadow 0.15s;
+  white-space: nowrap;
+  line-height: 1;
+}
+
+.v2-header-pipeline-btn.start {
+  background: #27ae60;
+  color: #fff;
+}
+.v2-header-pipeline-btn.start:hover {
+  background: #219a52;
+  box-shadow: 0 2px 8px rgba(39, 174, 96, 0.3);
+}
+
+.v2-header-pipeline-btn.rerun {
+  background: #2980b9;
+  color: #fff;
+}
+.v2-header-pipeline-btn.rerun:hover {
+  background: #2471a3;
+  box-shadow: 0 2px 8px rgba(41, 128, 185, 0.3);
+}
+
+.v2-header-pipeline-btn.stop {
+  background: #e74c3c;
+  color: #fff;
+}
+.v2-header-pipeline-btn.stop:hover {
+  background: #c0392b;
+  box-shadow: 0 2px 8px rgba(231, 76, 60, 0.3);
+}
+
+.v2-header-pipeline-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+.v2-pipeline-btn-label {
+  font-size: 12px;
+}
+
+/* Overflow menu */
+.v2-overflow-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  background: #fff;
+  border: 1px solid #e0e0e0;
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  min-width: 200px;
+  padding: 6px 0;
+  z-index: 300;
+}
+
+.v2-overflow-menu button {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 10px 16px;
+  border: none;
+  background: transparent;
+  font-size: 14px;
+  color: #2c3e50;
+  cursor: pointer;
+  transition: background 0.1s;
+}
+
+.v2-overflow-menu button:hover {
+  background: #f5f5f5;
+}
+
+.v2-overflow-menu button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* ---- Mobile ---- */
+@media (max-width: 600px) {
+  .v2-header {
+    padding: 8px 12px;
+    gap: 8px;
+  }
+
+  .v2-header-logo {
+    font-size: 18px;
+  }
+
+  .v2-header-title {
+    font-size: 14px;
+  }
+
+  .v2-header-meta {
+    font-size: 10px;
+    max-width: 140px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .v2-header-center {
+    display: none;
+  }
+
+  .v2-header-mobile-progress {
+    display: flex;
+  }
+
+  .v2-header-icon-btn {
+    width: 30px;
+    height: 30px;
+  }
+
+  .v2-pipeline-btn-label {
+    display: none;
+  }
+
+  .v2-header-pipeline-btn {
+    padding: 5px 8px;
+    font-size: 14px;
+  }
+
+  .v2-overflow-menu {
+    min-width: 180px;
+    right: -4px;
+  }
+}
+
+/* ---- Extension install guide modal ---- */
+.ext-guide-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: ext-fade-in 0.15s ease-out;
+}
+@keyframes ext-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+.ext-guide-modal {
+  position: relative;
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25);
+  max-width: 520px;
+  width: 92vw;
+  max-height: 85vh;
+  overflow-y: auto;
+  padding: 28px 32px 24px;
+  animation: ext-slide-up 0.2s ease-out;
+}
+@keyframes ext-slide-up {
+  from { transform: translateY(20px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+.ext-guide-close {
+  position: absolute;
+  top: 12px;
+  right: 14px;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  border: none;
+  background: transparent;
+  font-size: 16px;
+  color: #95a5a6;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.ext-guide-close:hover {
+  background: #f0f0f0;
+  color: #2c3e50;
+}
+.ext-guide-title {
+  margin: 0 0 8px;
+  font-size: 20px;
+  font-weight: 700;
+  color: #2c3e50;
+}
+.ext-guide-intro {
+  margin: 0 0 18px;
+  font-size: 14px;
+  color: #7f8c8d;
+  line-height: 1.5;
+}
+.ext-guide-steps {
+  margin: 0 0 20px;
+  padding-left: 20px;
+}
+.ext-guide-steps li {
+  margin-bottom: 14px;
+  font-size: 14px;
+  line-height: 1.6;
+  color: #2c3e50;
+}
+.ext-guide-steps li strong {
+  color: #1a5276;
+}
+.ext-guide-steps code {
+  background: #f4f6f7;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 12px;
+  color: #8e44ad;
+}
+.ext-guide-hint {
+  display: block;
+  font-size: 12px;
+  color: #95a5a6;
+  margin-top: 2px;
+}
+.ext-guide-download-btn {
+  display: inline-block;
+  margin-top: 6px;
+  padding: 8px 16px;
+  background: #2980b9;
+  color: #fff;
+  text-decoration: none;
+  border-radius: 8px;
+  border: none;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.ext-guide-download-btn:hover {
+  background: #1a6da0;
+}
+.ext-guide-copy-btn {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 4px 10px;
+  border: 1px solid #dcdde1;
+  border-radius: 6px;
+  background: #f8f9fa;
+  font-size: 12px;
+  color: #2c3e50;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.ext-guide-copy-btn:hover {
+  background: #e8e8e8;
+}
+.ext-guide-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border-top: 1px solid #ecf0f1;
+  padding-top: 16px;
+}
+.ext-guide-note {
+  font-size: 12px;
+  color: #95a5a6;
+}
+.ext-guide-done-btn {
+  padding: 8px 24px;
+  border-radius: 8px;
+  border: none;
+  background: #27ae60;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.ext-guide-done-btn:hover {
+  background: #219a52;
+}
+
+/* ── Auto-install choice row ── */
+.ext-guide-choose-row {
+  display: flex;
+  gap: 12px;
+  margin: 16px 0;
+}
+.ext-guide-auto-btn,
+.ext-guide-manual-btn {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 14px 10px;
+  border-radius: 8px;
+  border: 2px solid transparent;
+  cursor: pointer;
+  font-size: 15px;
+  font-weight: 600;
+  transition: background 0.15s, border-color 0.15s;
+}
+.ext-guide-auto-btn {
+  background: #1a73e8;
+  color: #fff;
+}
+.ext-guide-auto-btn:hover { background: #1557b0; }
+.ext-guide-manual-btn {
+  background: #f1f3f4;
+  color: #333;
+  border-color: #ddd;
+}
+.ext-guide-manual-btn:hover { background: #e2e6ea; }
+.ext-guide-auto-hint {
+  font-size: 12px;
+  font-weight: 400;
+  opacity: 0.85;
+  text-align: center;
+}
+
+/* ── Auto-running state ── */
+.ext-guide-auto-running {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 24px 0;
+  color: #555;
+  font-size: 14px;
+  text-align: center;
+}
+.ext-guide-spinner {
+  width: 32px;
+  height: 32px;
+  border: 3px solid #ddd;
+  border-top-color: #1a73e8;
+  border-radius: 50%;
+  animation: ext-spin 0.8s linear infinite;
+}
+@keyframes ext-spin { to { transform: rotate(360deg); } }
+
+/* ── Auto result ── */
+.ext-guide-result {
+  padding: 10px 14px;
+  border-radius: 6px;
+  font-weight: 600;
+  font-size: 15px;
+  margin: 12px 0 8px;
+}
+.ext-guide-result.success { background: #d4edda; color: #155724; }
+.ext-guide-result.failure { background: #f8d7da; color: #721c24; }
+.ext-guide-output {
+  background: #1e1e2e;
+  color: #cdd6f4;
+  font-size: 11px;
+  line-height: 1.5;
+  padding: 10px 12px;
+  border-radius: 6px;
+  max-height: 200px;
+  overflow-y: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+.ext-guide-link-btn {
+  background: none;
+  border: none;
+  color: #1a73e8;
+  text-decoration: underline;
+  cursor: pointer;
+  padding: 0;
+  font-size: inherit;
+}
+
+/* ── Confirm / countdown step ── */
+.ext-guide-confirm {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  padding: 8px 0 4px;
+  text-align: center;
+}
+.ext-guide-confirm-icon {
+  font-size: 36px;
+  line-height: 1;
+}
+.ext-guide-confirm-msg {
+  font-size: 14px;
+  color: #333;
+  max-width: 340px;
+  line-height: 1.5;
+}
+.ext-guide-countdown {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.ext-guide-countdown-ring {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 3px solid #1a73e8;
+  font-size: 22px;
+  font-weight: 700;
+  color: #1a73e8;
+  animation: ext-countdown-pulse 1s ease-in-out infinite;
+}
+@keyframes ext-countdown-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+.ext-guide-countdown-label {
+  font-size: 13px;
+  color: #666;
+}
+.ext-guide-confirm-btns {
+  display: flex;
+  gap: 10px;
+  margin-top: 4px;
+}
+.ext-guide-confirm-continue {
+  padding: 9px 20px;
+  border-radius: 6px;
+  border: none;
+  background: #1a73e8;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.ext-guide-confirm-continue:hover { background: #1557b0; }
+.ext-guide-confirm-cancel {
+  padding: 9px 20px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+  background: #f5f5f5;
+  color: #555;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.ext-guide-confirm-cancel:hover { background: #e8e8e8; }

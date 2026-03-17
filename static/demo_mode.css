@@ -1,0 +1,13 @@
+html.demo-mode .header-controls > * { display: none !important; }
+html.demo-mode .header-controls > .demo-home { display: inline-flex !important; }
+
+html.demo-mode .demo-home {
+  height: 32px;
+  padding: 0 10px;
+  border-radius: 10px;
+  border: 1px solid currentColor;
+  text-decoration: none;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+}

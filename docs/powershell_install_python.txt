@@ -1,0 +1,6 @@
+If you don't have python 3 installed, copy and paste following commands to powershell and run. run them one by one. not togather. Then restart powershell and run "python --version"
+
+Invoke-WebRequest -Uri "https://www.python.org/ftp/python/3.11.6/python-3.11.6-amd64.exe" -OutFile "$env:USERPROFILE\Downloads\python-installer.exe"
+
+Start-Process -FilePath "$env:USERPROFILE\Downloads\python-installer.exe" -ArgumentList "/quiet InstallAllUsers=1 PrependPath=1" -Wait
+

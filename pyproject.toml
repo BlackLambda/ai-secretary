@@ -1,0 +1,29 @@
+[build-system]
+requires = ["setuptools>=45", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ai-secretary"
+version = "0.1.0"
+description = "AI Secretary - Outlook and Teams Analysis Tools"
+authors = [{name = "Jiatong Wang"}]
+requires-python = ">=3.8"
+dependencies = [
+    "requests>=2.31.0",
+    "msal[broker]>=1.24.0",
+    "PyJWT>=2.8.0",
+    "playwright>=1.55.0",
+    "openai>=1.0.0",
+    "azure-identity>=1.15.0",
+    "flask>=3.0.0",
+]
+
+[project.optional-dependencies]
+desktop = [
+    "waitress>=2.1.2",
+    "pywebview>=5.0",
+    "pywin32>=306; sys_platform == 'win32'",
+]
+
+[tool.setuptools]
+packages = ["outlook_v2", "teams"]

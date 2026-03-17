@@ -1,0 +1,130 @@
+{
+  "version": 1,
+  "name": "Action Priority Scoring (0-20)",
+  "total_max_points": 30,
+  "evidence": {
+    "required": true,
+    "field": "scoring_evidence",
+    "type": "object",
+    "description": "For each non-zero scoring factor, provide a short verbatim quote/snippet from the original email/thread that justifies why the factor was awarded. Keys must match factors[].key. Values can be a string or an array of strings. Use \"\" or [] for factors scored 0."
+  },
+  "priority_levels": [
+    {
+      "label": "High",
+      "min_score": 16
+    },
+    {
+      "label": "Medium",
+      "min_score": 10
+    },
+    {
+      "label": "Low",
+      "min_score": 0
+    }
+  ],
+  "factors": [
+    {
+      "key": "explicit_action",
+      "label": "Explicit action requested",
+      "max_points": 1,
+      "description": "User directly asked to perform the action or invited to a mandatory meeting.",
+      "examples": [
+        "\"Can you review this by Friday?\"",
+        "\"You're required to attend.\""
+      ]
+    },
+    {
+      "key": "user_mentioned",
+      "label": "User mentioned",
+      "max_points": 3,
+      "description": "User name or alias mentioned in the context of the action.",
+      "examples": [
+        "\"User, please...\"",
+        "\"@user ...\""
+      ]
+    },
+    {
+      "key": "manager_involved",
+      "label": "Manager or leadership involved",
+      "max_points": 1,
+      "description": "Manager/skip-manager involved in assigning or discussing the action.",
+      "examples": [
+        "Manager asked for update",
+        "Skip-level thread"
+      ]
+    },
+    {
+      "key": "direct_email",
+      "label": "Direct email",
+      "max_points": 2,
+      "description": "User is in the To line (not only CC) for the message containing the action.",
+      "examples": [
+        "User in To",
+        "User only in CC => 0"
+      ]
+    },
+    {
+      "key": "project_impact",
+      "label": "Key project impact",
+      "max_points": 13,
+      "description": "Score based on how directly this action affects success/timeline of the user's active projects. Use strong signals like a named active project, a milestone/date, blocking language (blocked, cannot ship, dependency), required deliverables, P0/P1 priority, or explicit ownership. Scoring guide: High=13 (blocks or is required for a near-term milestone/launch), Medium=8 (important work for an active project but not blocking), Low=3 (loosely related/nice-to-have), None=0 (unrelated FYI/admin).",
+      "examples": [
+        "13: The active project is the key topic of the thread, and the requested action directly contributes to that project’s delivery.",
+        "13: The active project has been discussed repeatedly in the thread (multiple messages/updates), indicating it is a central ongoing focus.",
+        "8: The active project is mentioned, but it is not the main topic (the request is primarily about something else).",
+        "3: The action might indirectly impact a key project (possible downstream effect), but the project link is weak or speculative.",
+        "0: No clear connection to any active project (general FYI, unrelated admin)."
+      ]
+    },
+    {
+      "key": "team_mentioned",
+      "label": "Team mentioned",
+      "max_points": 1,
+      "description": "User's team is discussed in relation to this action.",
+      "examples": [
+        "Team owning area",
+        "Team asked to review"
+      ]
+    },
+    {
+      "key": "watch_items",
+      "label": "Watch items",
+      "max_points": 2,
+      "description": "Action relates to user's watch items / keywords of interest.",
+      "examples": [
+        "Matches WATCH_ITEMS keyword",
+        "Close semantic match"
+      ]
+    },
+    {
+      "key": "user_engagement",
+      "label": "User engagement",
+      "max_points": 3,
+      "description": "How actively the user engaged in the thread (Strong engagement=3; meaningful reply=2; minimal reply=1; none=0).",
+      "examples": [
+        "User made commitments",
+        "User thanked only"
+      ]
+    },
+    {
+      "key": "audience_size",
+      "label": "Audience size / directness",
+      "max_points": 2,
+      "description": "Smaller-audience requests score higher (1:1/direct=2; small group=1; broadcast=0).",
+      "examples": [
+        "1:1 email",
+        "Large alias announcement"
+      ]
+    },
+    {
+      "key": "org_announcement_importance",
+      "label": "Org/company announcement importance",
+      "max_points": 2,
+      "description": "For broad announcements, importance to user (high-impact mandatory change=2; org-level relevant=1; newsletter=0).",
+      "examples": [
+        "Mandatory security policy",
+        "Weekly newsletter"
+      ]
+    }
+  ]
+}

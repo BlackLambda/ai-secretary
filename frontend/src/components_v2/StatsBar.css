@@ -1,0 +1,91 @@
+/* StatsBar.css — v2 compact stats row */
+
+.v2-stats-bar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 24px;
+  background: #fff;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.v2-stat-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 12px;
+  border: 1px solid transparent;
+  border-radius: 20px;
+  background: transparent;
+  font-size: 13px;
+  font-weight: 500;
+  color: #7f8c8d;
+  cursor: pointer;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+
+.v2-stat-pill:hover {
+  background: #f5f5f5;
+  color: #2c3e50;
+}
+
+.v2-stat-pill.active {
+  border-color: currentColor;
+  background: rgba(0, 0, 0, 0.03);
+}
+
+.v2-stat-pill.active.role-assignee {
+  color: #3498db;
+}
+
+.v2-stat-pill.active.role-collaborator {
+  color: #9b59b6;
+}
+
+.v2-stat-pill.active.role-observer {
+  color: #778899;
+}
+
+.v2-stat-pill.active.role-done {
+  color: #27ae60;
+}
+
+.v2-stat-count {
+  font-weight: 700;
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+
+.v2-stat-sep {
+  color: #ddd;
+  font-size: 14px;
+  user-select: none;
+}
+
+/* ---- Mobile ---- */
+@media (max-width: 600px) {
+  .v2-stats-bar {
+    padding: 6px 12px;
+    gap: 4px;
+    justify-content: flex-start;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+
+  .v2-stats-bar::-webkit-scrollbar {
+    display: none;
+  }
+
+  .v2-stat-pill {
+    font-size: 12px;
+    padding: 3px 10px;
+    flex-shrink: 0;
+  }
+
+  .v2-stat-sep {
+    font-size: 12px;
+  }
+}

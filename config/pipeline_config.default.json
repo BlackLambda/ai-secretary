@@ -1,0 +1,90 @@
+{
+  "fetch_interval_minutes": 60,
+  "schedule_enabled": false,
+  "schedule_days": [1, 2, 3, 4, 5],
+  "schedule_start_hour": 8,
+  "schedule_start_minute": 0,
+  "schedule_end_hour": 17,
+  "schedule_end_minute": 0,
+  "initial_fetch_days": 1,
+  "initial_data_dir": null,
+  "data_folder_path": "incremental_data",
+  "data_folder_paths": [
+    "incremental_data"
+  ],
+  "active_data_folder_path": "incremental_data",
+  "max_threads": null,
+  "max_conversations": null,
+  "teams_skip_chat_name_terms": [
+    "Microsoft 365 Chat",
+    "Viva Glint",
+    "Mail Keeper",
+    "Copilot in Teams",
+    "Copilot in Outlook",
+    "Copilot in Word"
+  ],
+  "teams_skip_sender_names": [
+    "Microsoft 365 Chat",
+    "Viva Glint",
+    "Mail Keeper",
+    "Copilot in Teams",
+    "Copilot in Outlook",
+    "Copilot in Word"
+  ],
+  "teams_skip_sender_without_email": true,
+  "outlook_skip_sender_emails": [
+    "noreply@microsoft.com"
+  ],
+  "outlook_skip_subject_terms": [
+    "[EXTERNAL]"
+  ],
+  "disabled_event_type": [
+    "meeting"
+  ],
+  "max_dedup_run": 3,
+  "prune_days_ago": 3,
+  "scoring_system_outlook_path": "config/scoring_system.json",
+  "scoring_system_teams_path": "config/scoring_system.json",
+  "server_host": "localhost",
+  "server_port": 5000,
+  "server_url": "http://localhost:5000",
+  "bug_report_recipient_email": "you@example.com",
+  "app_update_poll_interval_seconds": 30,
+  "run_pipeline_after_start": false,
+  "focus_score_threshold": 0,
+  "task_todo_score_cutoff": 8,
+  "ai_backend": "copilot",
+  "azure_model": "gpt-5.1",
+  "copilot_model": "gemini-3-flash-preview",
+  "azure_openai_timeout_seconds": 60,
+  "briefing_data_path": "incremental_data/output/briefing_data.json",
+  "outlook_parallel_workers": 3,
+  "obsolete_days_threshold": 3,
+  "ui_setting_keys": [
+    "ai_backend",
+    "azure_model",
+    "copilot_model",
+    "fetch_interval_minutes",
+    "schedule_enabled",
+    "schedule_days",
+    "schedule_start_hour",
+    "schedule_start_minute",
+    "schedule_end_hour",
+    "schedule_end_minute",
+    "prune_days_ago",
+    "initial_fetch_days",
+    "data_folder_paths",
+    "active_data_folder_path",
+    "run_pipeline_after_start",
+    "focus_score_threshold",
+    "task_todo_score_cutoff",
+    "azure_openai_timeout_seconds",
+    "outlook_parallel_workers",
+    "obsolete_days_threshold",
+    "teams_skip_chat_name_terms",
+    "teams_skip_sender_names",
+    "teams_skip_sender_without_email",
+    "outlook_skip_sender_emails",
+    "outlook_skip_subject_terms"
+  ]
+}

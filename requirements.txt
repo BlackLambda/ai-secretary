@@ -1,0 +1,13 @@
+# Core runtime dependencies for ai-secretary.
+# Prefer installing via pyproject.toml:
+#   python -m pip install --user .
+
+requests>=2.31.0
+msal[broker]>=1.24.0
+PyJWT>=2.8.0
+playwright>=1.55.0
+openai>=1.0.0
+azure-identity>=1.15.0
+flask>=3.0.0
+waitress>=2.1.2
+pywin32>=306

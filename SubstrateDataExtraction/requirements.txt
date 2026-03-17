@@ -1,0 +1,75 @@
+# SubstrateDataExtract - Complete Dependencies
+# For a pure clean Python environment
+
+# ============================================================
+# Core Dependencies (REQUIRED)
+# ============================================================
+
+# HTTP requests library
+# Used by: SubstrateClient for API calls
+requests>=2.31.0
+
+# Microsoft Authentication Library (MSAL)
+# Used by: TokenGenerator for Azure AD authentication
+msal[broker]>=1.24.0
+
+# PyJWT - JWT token decoding and validation
+# Used by: TokenManager for automatic token expiration checking
+PyJWT>=2.8.0
+
+playwright>=1.55.0
+
+# ============================================================
+# Python Standard Library (Built-in - No installation needed)
+# ============================================================
+# The following are built-in to Python and don't need installation:
+#
+# - argparse       (CLI argument parsing)
+# - json           (JSON handling)
+# - os             (Operating system interface)
+# - sys            (System-specific parameters)
+# - pathlib        (Object-oriented filesystem paths)
+# - datetime       (Date and time handling)
+# - time           (Time-related functions)
+# - typing         (Type hints)
+# - base64         (Base64 encoding/decoding)
+# - binascii       (Binary/ASCII conversions)
+# - subprocess     (Subprocess management - used for PowerShell)
+# - logging        (Logging facility)
+
+# ============================================================
+# Platform-Specific Requirements
+# ============================================================
+# Windows:
+#   - PowerShell (pre-installed on Windows)
+#   - get_token.ps1 script (included in project)
+#   - Microsoft.IdentityModel.Clients.ActiveDirectory.dll (included)
+#
+# Note: This project is designed for Windows environments with
+#       corporate Azure AD authentication.
+
+# ============================================================
+# Installation Instructions
+# ============================================================
+# 1. Ensure Python 3.8 or higher is installed:
+#    python --version
+#
+# 2. Install dependencies:
+#    pip install -r requirements.txt
+#
+# 3. Verify installation:
+#    python -c "import requests, msal, jwt; print('All dependencies installed!')"
+#
+# 4. Test the project:
+#    python main.py --help
+
+# ============================================================
+# Optional Development Dependencies
+# ============================================================
+# Uncomment if needed for development:
+#
+# pytest>=7.0.0              # Testing framework
+# black>=23.0.0              # Code formatter
+# flake8>=6.0.0              # Code linter
+# mypy>=1.0.0                # Static type checker
+# ipython>=8.0.0             # Interactive Python shell

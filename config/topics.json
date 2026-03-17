@@ -1,0 +1,20 @@
+{
+    "following": [
+        "lunch",
+        "dinner",
+        "trade union",
+        "benefits",
+        "vacation",
+        "Town Hall",
+        "Meetup",
+        "Training",
+        "Campaign",
+        "Social",
+        "Announcement",
+        "Webinar",
+        "Meeting"
+    ],
+    "not_following": [
+        "Incident"
+    ]
+}

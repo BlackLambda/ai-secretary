@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Secretary</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <!-- Header (matches dashboard CompactHeader) -->
+  <header id="header">
+    <div class="header-left">
+      <span class="logo">🤖</span>
+      <div class="header-titles">
+        <span class="header-title">AI Secretary</span>
+        <span id="header-meta" class="header-meta"></span>
+      </div>
+    </div>
+    <div class="header-right">
+      <span id="badge" class="badge" title="Assignee tasks">0</span>
+      <button id="btn-pipeline" class="pipeline-btn start" title="Start Pipeline">
+        <span class="pipeline-btn-icon">▶</span>
+        <span class="pipeline-btn-label">Start</span>
+      </button>
+      <button id="btn-refresh" class="icon-btn" title="Refresh">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="23 4 23 10 17 10" />
+          <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" />
+        </svg>
+      </button>
+    </div>
+  </header>
+
+  <!-- Pipeline status bar -->
+  <div id="status-bar" class="status-bar status-offline">
+    <span class="status-dot"></span>
+    <span id="status-text" class="status-text">Connecting…</span>
+    <div id="progress-track" class="progress-track" style="display:none">
+      <div id="progress-fill" class="progress-fill"></div>
+    </div>
+    <span id="progress-text" class="progress-text"></span>
+  </div>
+
+  <!-- Update available banner -->
+  <div id="update-banner" class="update-banner" style="display:none">
+    <div class="update-banner-content">
+      <span class="update-icon">🔄</span>
+      <div class="update-text">
+        <span class="update-title">Update available</span>
+        <span id="update-detail" class="update-detail"></span>
+      </div>
+    </div>
+    <div class="update-actions">
+      <button id="btn-open-dash-update" class="update-open-dash-btn" title="Open dashboard to restart pipeline">Open Dashboard</button>
+      <button id="btn-update-dismiss" class="update-dismiss-btn" title="Dismiss">✕</button>
+    </div>
+  </div>
+
+  <!-- Row 1: Stats pills (Assignee · Collaborator · Watching · Done) -->
+  <div id="stats-bar" class="stats-bar">
+    <button class="stat-pill active role-assignee" data-role="assignee">
+      Assignee <span class="stat-count" id="count-assignee">0</span>
+    </button>
+    <span class="stat-sep">·</span>
+    <button class="stat-pill" data-role="collaborator">
+      Collaborator <span class="stat-count" id="count-collaborator">0</span>
+    </button>
+    <span class="stat-sep">·</span>
+    <button class="stat-pill" data-role="observer">
+      Watching <span class="stat-count" id="count-observer">0</span>
+    </button>
+    <span class="stat-sep">·</span>
+    <button class="stat-pill" data-status="done">
+      Done <span class="stat-count" id="count-done">0</span>
+    </button>
+  </div>
+
+  <!-- Row 2: Sort chips -->
+  <div id="sort-bar" class="sort-bar">
+    <button class="sort-chip active" data-sort="priority">Priority</button>
+    <button class="sort-chip" data-sort="updated">Updated</button>
+    <button class="sort-chip" data-sort="deadline">Deadline</button>
+    <button class="sort-chip" data-sort="received">Received</button>
+  </div>
+
+  <!-- Task list -->
+  <main id="task-list" class="task-list">
+    <div id="loading" class="placeholder">Loading tasks…</div>
+    <div id="empty" class="placeholder" style="display:none">
+      <div>No items to show.</div>
+      <div class="placeholder-hint">Try switching to a different role filter.</div>
+    </div>
+    <div id="error" class="placeholder error" style="display:none">
+      <span id="error-msg">Cannot reach AI Secretary server</span>
+      <div class="error-actions">
+        <button id="btn-start-server" class="start-server-btn" title="Launch the server via ai-secretary:// protocol">
+          <span class="start-server-icon">🚀</span> Start Server
+        </button>
+        <button id="btn-retry" class="link-btn">Retry</button>
+      </div>
+      <div id="start-server-status" class="start-server-status" style="display:none">
+        <span class="start-spinner"></span>
+        <span id="start-server-msg">Starting server…</span>
+      </div>
+    </div>
+
+    <!-- Onboarding guide (shown when server is up but no data yet) -->
+    <div id="onboarding" class="onboarding-panel" style="display:none">
+      <div class="onboard-icon">👋</div>
+      <div class="onboard-title">Welcome to AI Secretary!</div>
+      <div class="onboard-subtitle">No briefing data yet. Let’s get started:</div>
+      <ol class="onboard-steps">
+        <li>
+          <span class="onboard-step-num">1</span>
+          <span>Open the <strong>Dashboard</strong> to configure your profile</span>
+        </li>
+        <li>
+          <span class="onboard-step-num">2</span>
+          <span>Click <strong>▶ Start</strong> to run the data pipeline</span>
+        </li>
+        <li>
+          <span class="onboard-step-num">3</span>
+          <span>Wait for analysis to complete (~2–5 min)</span>
+        </li>
+      </ol>
+      <div class="onboard-btn-row">
+        <button id="btn-open-dashboard" class="onboard-dashboard-btn">
+          🌐 Open Dashboard
+        </button>
+      </div>
+      <button id="btn-onboard-retry" class="link-btn onboard-retry">Refresh</button>
+    </div>
+  </main>
+
+  <!-- Footer -->
+  <footer id="footer">
+    <a id="open-dashboard" href="#" title="Open full dashboard">Open Dashboard ↗</a>
+    <button id="btn-settings" class="link-btn" title="Settings">⚙ Settings</button>
+  </footer>
+
+  <script src="popup.js"></script>
+</body>
+</html>
